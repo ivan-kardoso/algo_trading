@@ -1,0 +1,88 @@
+################################################################################
+# Bot Crypto - Configurações de Sistema
+################################################################################
+# Este arquivo contém as configurações do sistema necessárias para executar
+# o bot de trading Binance USDM Futures. Credenciais, timeouts, limites de retry
+# e parâmetros de monitoramento são definidos aqui.
+
+
+# SEÇÃO 1: CONFIGURAÇÕES GLOBAIS
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
+
+# Fuso horário padrão do bot (formato IANA). Ex: America/Sao_Paulo, UTC, US/Eastern
+timezone="America/Sao_Paulo"
+
+
+# SEÇÃO 2: PARÂMETROS DE FETCH/DOWNLOAD DE CANDLES
+# Controla comportamento de recuperação de dados históricos (candles).
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
+[fetch]
+# Número máximo de tentativas ao baixar candles em caso de falha (tipo: int, > 0)
+fetch_retry_attempts=3
+
+# Tempo de espera (segundos) entre tentativas de fetch (tipo: int, > 0)
+fetch_retry_delay=3
+
+# Limite máximo de candles a baixar em um lote (tipo: int, > 100)
+batch_limit=500
+
+# Número máximo de linhas de dados a manter em memória (tipo: int, > 0)
+max_rows=3
+
+
+# SEÇÃO 3: MONITORAMENTO DE POSIÇÃO (LOOP PRINCIPAL DO BOT)
+# Controla o comportamento do loop de monitoramento de posições abertas.
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
+[monitoring]
+# Máximo de falhas consecutivas antes de parar o monitoramento (tipo: int, > 0)
+max_monitoring_failures=5
+
+# Intervalo entre heartbeats de log em segundos (tipo: int, > 0)
+monitoring_heartbeat_every=20
+
+# Intervalo de verificação de posições em segundos (tipo: int, > 0)
+monitoring_check_interval_seconds=30
+
+# Tempo de espera antes de retry após erro em segundos (tipo: int, > 0)
+error_wait_seconds=60
+
+# Máximo de tentativas de limpeza antes de falhar (tipo: int, > 0)
+cleanup_max_retries=3
+
+# Máximo de tentativas gerais em caso de erro (tipo: int, > 0)
+error_max_retries=3
+
+
+# SEÇÃO 4: EXECUÇÃO E CONFIRMAÇÃO DE ORDENS
+# Controla comportamento de colocação de ordens, stop loss e take profit.
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
+[execution]
+# Número de tentativas para confirmar execução de stop loss (tipo: int, > 0)
+sl_confirm_attempts=3
+
+# Delay em segundos entre confirmações de SL (tipo: float, > 0)
+sl_confirm_delay_seconds=0.5
+
+# Timeout em segundos para fetch de posições abertas (tipo: float, > 0)
+fetch_positions_timeout_seconds=35.0
+
+# Máximo de tentativas de normalização de estado de posição (tipo: int, > 0)
+normalize_max_attempts=3
+
+# Delay em segundos entre tentativas de normalização (tipo: float, > 0)
+normalize_retry_delay_seconds=1.5
+
+
+# SEÇÃO 5: LOGGING E MONITORAMENTO
+# Controla comportamento de logs e console.
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
+[logging]
+# Tamanho máximo de cada arquivo de log em bytes (tipo: int, > 0)
+# Exemplo: 10485760 = 10 MB
+log_max_bytes=10485760 # 10 MB
+
+# Número de backup logs a manter (tipo: int, > 0)
+log_backup_count=5
+
+# Taxa de refresh do console em Hz (atualizações por segundo) (tipo: int, > 0)
+console_refresh_per_second=5
