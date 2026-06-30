@@ -32,7 +32,8 @@ logs/
 
 # Jupyter
 .ipynb_checkpoints/
-4_test_secrets.ipynb
+notebooks/
+
 
 # Testing/coverage/cache
 .pytest_cache/
