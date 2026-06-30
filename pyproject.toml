@@ -1,0 +1,37 @@
+[project]
+name = "algo-trading"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "ccxt>=4.5.62",
+    "loguru>=0.7.3",
+    "pydantic>=2.13.4",
+    "pydantic-settings>=2.14.2",
+]
+
+# Hatchling é o build backend padrão do uv.
+# Ele é quem "ensina" o Python a importar from bot.shared...
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# Aqui está o mapeamento chave:
+# "o pacote bot vive em binance/usdm_futures"
+[tool.hatch.build.targets.wheel]
+packages = ["binance/usdm_futures"]
+
+[tool.ruff]
+line-length = 90
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.3.0",
+    "ruff>=0.15.20",
+]
