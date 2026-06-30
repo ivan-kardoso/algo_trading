@@ -1,0 +1,1 @@
+python -m binance.usdm_futures.app.main

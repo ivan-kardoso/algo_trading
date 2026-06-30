@@ -73,16 +73,27 @@ normalize_max_attempts=3
 normalize_retry_delay_seconds=1.5
 
 
-# SEÇÃO 5: LOGGING E MONITORAMENTO
-# Controla comportamento de logs e console.
+# SEÇÃO 5: JANELA OPERACIONAL DO MERCADO
+# Define quando o bot opera. Dias como inteiros: 0=Segunda … 6=Domingo.
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
+[market_hours]
+# Abertura: Segunda-feira às 09:00 (horário America/Sao_Paulo)
+market_open_day = 0
+market_open_hour = 9
+market_open_minute = 0
+
+# Fechamento: Sexta-feira às 17:00 (horário America/Sao_Paulo)
+market_close_day = 4
+market_close_hour = 17
+market_close_minute = 0
+
+
+# SEÇÃO 6: LOGGING
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
 [logging]
-# Tamanho máximo de cada arquivo de log em bytes (tipo: int, > 0)
+# Tamanho máximo de cada arquivo de log em bytes (tipo: int, >= 3145728)
 # Exemplo: 10485760 = 10 MB
 log_max_bytes=10485760 # 10 MB
 
 # Número de backup logs a manter (tipo: int, > 0)
 log_backup_count=5
-
-# Taxa de refresh do console em Hz (atualizações por segundo) (tipo: int, > 0)
-console_refresh_per_second=5
