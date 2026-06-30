@@ -1,0 +1,21 @@
+symbol = "BTC/USDT:USDT"
+strategy = "triple-ema"
+sandbox = true
+
+[data]
+timeframe = "15m"
+since = ""
+candle_limit = 150
+
+[orders]
+amount = 0.01
+order_type = "limit"
+chase_percent = 0.05
+offset_percent = 0.02
+fill_timeout = 30
+max_retries = 3
+
+[risk]
+stop_loss_percent = 1.5
+take_profit_percent = 3.0
+leverage = 5
