@@ -10,5 +10,6 @@ que nunca emite sinal, usada pelo bootstrap até a estratégia real existir.
 """
 
 from .null_strategy import NullStrategy
+from .triple_ema import TripleEmaStrategy
 
-__all__ = ["NullStrategy"]
+__all__ = ["NullStrategy", "TripleEmaStrategy"]

@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from pathlib import Path
 
 from ..config.schedule import SystemSettings
 from ..config.secrets import Secrets
+from ..config.strategy_config import load_strategy_settings
 from ..config.symbol_config import AssetSettings, DataConfig, load_asset_settings
 from ..domain.state_machine.transitions import RunContext
 from ..execution.order_executor import OrderExecutor
@@ -19,13 +21,15 @@ from ..market_data.source import OHLCVSource
 from ..market_data.transform import OHLCVTransform
 from ..orchestration.symbol_runner import SymbolRunner
 from ..shared.market_hours import MarketHoursChecker
-from ..strategy import NullStrategy
+from ..strategy import NullStrategy, TripleEmaStrategy
 
 
 def _resolve_candle_limit(data: DataConfig, timeframe_ms: int) -> int:
     """Converte config de dados em quantidade de candles para o carregamento inicial."""
     if data.candle_limit is not None:
         return data.candle_limit
+    if data.since is None:
+        raise ValueError("'since' precisa ser informado quando candle_limit não está definido")
     since_dt = datetime.strptime(data.since, "%d/%m/%Y").replace(tzinfo=timezone.utc)
     since_ms = int(since_dt.timestamp() * 1000)
     now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
@@ -44,6 +48,13 @@ async def build_symbol_runner(
     """
     asset = load_asset_settings(toml_path)
     log = get_pair_logger(asset.symbol)
+
+    # Config da estratégia: mora em binance/strategy_toml/<strategy>.toml
+    # (pasta irmã de symbol_toml/). O nome do arquivo casa com asset.strategy.
+    strategy_path = (
+        Path(toml_path).parent.parent / "strategy_toml" / f"{asset.strategy}.toml"
+    )
+    strategy_settings = load_strategy_settings(str(strategy_path))
 
     # Seleciona credenciais conforme o modo sandbox do par
     if asset.sandbox:
@@ -138,6 +149,12 @@ async def build_symbol_runner(
         monitoring_heartbeat_every=mon_cfg.monitoring_heartbeat_every,
     )
 
+    # Seleciona a implementação da estratégia pelo nome declarado no par.
+    if asset.strategy == "triple-ema":
+        strategy = TripleEmaStrategy(strategy_settings)
+    else:
+        strategy = NullStrategy()
+
     runner = SymbolRunner(
         symbol=asset.symbol,
         ctx=ctx,
@@ -148,7 +165,7 @@ async def build_symbol_runner(
         position_tracker=tracker,
         order_executor=executor,
         market_data_repo=repo,
-        strategy=NullStrategy(),
+        strategy=strategy,
         log=log,
     )
 
