@@ -2,8 +2,7 @@ from pathlib import Path
 import tomllib
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from usdm_futures.domain.models.strategy_names import VALID_STRATEGIES
-
+from ..domain.models.strategy_names import VALID_STRATEGIES
 from ..domain.models.ohlcv_field import VALID_OHLCV_FIELDS
 
 
