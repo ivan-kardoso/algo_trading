@@ -131,6 +131,7 @@ async def build_symbol_runner(
     # --- Contexto da FSM ---
     mon_cfg = sys_settings.monitoring
     ctx = RunContext(
+        has_symbol=True,
         max_cleanup_retries=mon_cfg.cleanup_max_retries,
         max_error_retries=mon_cfg.error_max_retries,
         max_monitoring_failures=mon_cfg.max_monitoring_failures,

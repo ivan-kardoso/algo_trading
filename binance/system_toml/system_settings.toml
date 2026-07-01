@@ -27,7 +27,7 @@ fetch_retry_delay=3
 batch_limit=500
 
 # Número máximo de linhas de dados a manter em memória (tipo: int, > 0)
-max_rows=3
+max_rows=200
 
 
 # SEÇÃO 3: MONITORAMENTO DE POSIÇÃO (LOOP PRINCIPAL DO BOT)
