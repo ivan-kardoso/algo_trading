@@ -9,7 +9,7 @@ candle_limit = 150
 
 [orders]
 amount = 0.01
-order_type = "limit"
+order_type = "market"
 chase_percent = 0.05
 offset_percent = 0.02
 fill_timeout = 30
