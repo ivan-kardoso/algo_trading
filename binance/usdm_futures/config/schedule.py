@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 class FetchConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    candle_fetch_delay_seconds: int = Field(gt=0)
     fetch_retry_attempts: int = Field(gt=0)
     fetch_retry_delay: int = Field(gt=0)
     batch_limit: int = Field(gt=0)
@@ -45,7 +46,7 @@ class LoggingConfig(BaseModel):
 class MarketHoursConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    market_open_day: int = Field(ge=0, le=6)    # 0=Segunda … 6=Domingo
+    market_open_day: int = Field(ge=0, le=6)  # 0=Segunda … 6=Domingo
     market_open_hour: int = Field(ge=0, le=23)
     market_open_minute: int = Field(ge=0, le=59)
     market_close_day: int = Field(ge=0, le=6)
@@ -79,7 +80,9 @@ def load_system_settings(filepath: str) -> SystemSettings:
     path = Path(filepath)
 
     if not path.exists():
-        raise FileNotFoundError(f"Arquivo '{path.name}' não encontrado em '{path.parent}'")
+        raise FileNotFoundError(
+            f"Arquivo '{path.name}' não encontrado em '{path.parent}'"
+        )
 
     with open(path, "rb") as f:
         try:

@@ -17,11 +17,14 @@ timezone="America/Sao_Paulo"
 # Controla comportamento de recuperação de dados históricos (candles).
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
 [fetch]
+# Tempo de espera (segundos) para efetuar o fetch do candle depois que ele fechar
+candle_fetch_delay_seconds = 3
+
 # Número máximo de tentativas ao baixar candles em caso de falha (tipo: int, > 0)
-fetch_retry_attempts=3
+fetch_retry_attempts=10
 
 # Tempo de espera (segundos) entre tentativas de fetch (tipo: int, > 0)
-fetch_retry_delay=3
+fetch_retry_delay=1
 
 # Limite máximo de candles a baixar em um lote (tipo: int, > 100)
 batch_limit=500

@@ -3,16 +3,16 @@ strategy = "triple-ema"
 sandbox = true
 
 [data]
-timeframe = "15m"
+timeframe = "5m"
 since = ""
 candle_limit = 150
 
 [orders]
 amount = 0.01
-order_type = "market"
-chase_percent = 0.05
+order_type = "limit"
+chase_percent = 0.10
 offset_percent = 0.02
-fill_timeout = 30
+fill_timeout = 35
 max_retries = 3
 
 [risk]
