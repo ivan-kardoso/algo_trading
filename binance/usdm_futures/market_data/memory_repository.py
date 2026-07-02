@@ -66,7 +66,15 @@ class MemoryRepository(IMarketDataRepository):
 
     async def _download_incremental(self) -> OHLCVData:
         since = int(self._dataset[-1][0]) + 1
-        all_candles: OHLCVData = []
+        # Primeiro lote com retry: se o candle novo ainda não publicou, tenta
+        # novamente (fetch_retry_delay/attempts). Esgotou → EmptyOHLCVError → ERROR.
+        first = await self._fetch_with_empty_retry(since=since, limit=self._batch_limit)
+
+        all_candles: OHLCVData = list(first)
+        # Continua a paginação a partir do primeiro lote.
+        if len(first) < self._batch_limit:
+            return all_candles
+        since = int(first[-1][0]) + self._source.timeframe_ms
 
         while True:
             batch = await self._source.fetch_ohlcv(since=since, limit=self._batch_limit)
@@ -84,7 +92,7 @@ class MemoryRepository(IMarketDataRepository):
         for row in self._dataset + new_candles:
             seen[int(row[0])] = row
         merged = [seen[ts] for ts in sorted(seen)]
-        self._dataset = merged[-self._max_rows:] if self._max_rows else merged
+        self._dataset = merged[-self._max_rows :] if self._max_rows else merged
 
     async def update(self) -> None:
         if not self._dataset:
