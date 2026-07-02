@@ -22,6 +22,7 @@ async def handle_standby(
     ctx: RunContext,
     hours: MarketHoursChecker,
     repo: IMarketDataRepository,
+    candle_delay: int,
     log: Logger,
 ) -> None:
     """Dorme pelo tempo necessário conforme o motivo do standby.
@@ -46,7 +47,7 @@ async def handle_standby(
     else:  # WAIT_NEXT_CANDLE
         if not ctx.has_data_pipeline:
             return  # on_standby vai para FETCH_DATA via fallback
-        seconds = repo.seconds_until_next_candle() + 5
+        seconds = repo.seconds_until_next_candle() + candle_delay
         log.info(f"Aguardando próximo candle ({seconds}s)...")
         await asyncio.sleep(seconds)
 

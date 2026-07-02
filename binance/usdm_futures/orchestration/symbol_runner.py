@@ -245,7 +245,13 @@ class SymbolRunner:
             self._monitoring_started_at = None
 
     async def _step_standby(self) -> None:
-        await handle_standby(self._ctx, self._hours, self._repo, self._log)
+        await handle_standby(
+            self._ctx,
+            self._hours,
+            self._repo,
+            self._sys.fetch.candle_fetch_delay_seconds,
+            self._log,
+        )
         on_standby(self._ctx)
 
     async def _step_error(self) -> None:
