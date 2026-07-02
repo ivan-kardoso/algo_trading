@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Literal
 
+from ..domain.models.indicator_data import IndicatorData
+
 from ..config.strategy_config import StrategySettings
 from ..domain.ports import IStrategyPort, OHLCVData
 from ..indicators import ema
@@ -22,9 +24,14 @@ class TripleEmaStrategy(IStrategyPort):
         self._settings = settings
         self._field_index = _FIELD_INDEX[settings.field]
 
-    def apply_indicators(self, data: OHLCVData) -> OHLCVData:
-        # Estratégia sem estado: EMAs são calculadas sob demanda no check_signal.
-        return data
+    def apply_indicators(self, data: OHLCVData) -> IndicatorData:
+        series = [row[self._field_index] for row in data]
+        return IndicatorData(
+            candles=data,
+            ema_fast=ema(series, self._settings.fast_period),
+            ema_medium=ema(series, self._settings.medium_period),
+            ema_slow=ema(series, self._settings.slow_period),
+        )
 
     def _compute_emas(self, data: OHLCVData):
         series = [row[self._field_index] for row in data]
