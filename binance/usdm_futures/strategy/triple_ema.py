@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from typing import Literal
 
-from ..domain.models.indicator_data import IndicatorData
-
 from ..config.strategy_config import StrategySettings
+from ..domain.models.indicator_data import IndicatorData
 from ..domain.ports import IStrategyPort, OHLCVData
 from ..indicators import ema
 
@@ -24,6 +23,11 @@ class TripleEmaStrategy(IStrategyPort):
         self._settings = settings
         self._field_index = _FIELD_INDEX[settings.field]
 
+        # Estado do gatilho (memória entre candles).
+        self._armed: Literal["buy", "sell"] | None = None
+        # Timestamp do último candle já processado (garante avanço na série).
+        self._last_ts: float | None = None
+
     def apply_indicators(self, data: OHLCVData) -> IndicatorData:
         series = [row[self._field_index] for row in data]
         return IndicatorData(
@@ -33,62 +37,56 @@ class TripleEmaStrategy(IStrategyPort):
             ema_slow=ema(series, self._settings.slow_period),
         )
 
-    def _compute_emas(self, data: OHLCVData):
-        series = [row[self._field_index] for row in data]
-        fast = ema(series, self._settings.fast_period)
-        medium = ema(series, self._settings.medium_period)
-        slow = ema(series, self._settings.slow_period)
-        return fast, medium, slow
+    def check_signal(self, data: IndicatorData) -> Literal["buy", "sell"] | None:
+        candles = data.candles
+        if len(candles) < 2:
+            return None
 
-    def check_signal(self, data: OHLCVData) -> Literal["buy", "sell"] | None:
-        fast, medium, slow = self._compute_emas(data)
         px = self._field_index
+        i = len(candles) - 1  # candle atual (o que acabou de fechar)
 
-        armed: Literal["buy", "sell"] | None = None  # gatilho armado e seu lado
+        # Validação #1: a série precisa avançar. Só processa se o timestamp
+        # do candle atual for maior que o do último candle já processado.
+        current_ts = candles[i][0]
+        if self._last_ts is not None and current_ts <= self._last_ts:
+            return None
+        self._last_ts = current_ts
 
-        # Varre o dataset inteiro reconstruindo o estado do gatilho candle a candle.
-        # Começa em 1 (precisa do candle anterior); ignora candles sem as 3 EMAs.
-        for i in range(1, len(data)):
-            fast_value = fast[i]
-            medium_value = medium[i]
-            slow_value = slow[i]
+        f = data.ema_fast[i]
+        m = data.ema_medium[i]
+        s = data.ema_slow[i]
+        # EMAs ainda não aquecidas: sem base para avaliar.
+        if f is None or m is None or s is None:
+            return None
 
-            if fast_value is None or medium_value is None or slow_value is None:
-                continue
+        close = candles[i][px]
+        prev_close = candles[i - 1][px]
 
-            close = data[i][px]
-            prev_close = data[i - 1][px]
-            f, m, s = fast_value, medium_value, slow_value
+        up = f > m > s  # alinhamento de alta
+        down = f < m < s  # alinhamento de baixa
 
-            up = f > m > s  # alinhamento de alta
-            down = f < m < s  # alinhamento de baixa
+        # 1) Desarme (precede tudo): fechar contra a lenta zera o gatilho.
+        if self._armed == "buy" and close < s:
+            self._armed = None
+        elif self._armed == "sell" and close > s:
+            self._armed = None
 
-            # 1) Desarme (precede tudo): gatilho de compra morre ao fechar < slow;
-            #    o de venda morre ao fechar > slow.
-            if armed == "buy" and close < s:
-                armed = None
-            elif armed == "sell" and close > s:
-                armed = None
+        # 2) Disparo: com gatilho armado, o primeiro candle que fecha acima
+        #    (compra) / abaixo (venda) da rápida é o sinal. Consome o gatilho.
+        if self._armed == "buy" and close > f:
+            self._armed = None
+            return "buy"
+        if self._armed == "sell" and close < f:
+            self._armed = None
+            return "sell"
 
-            # 2) Disparo: com gatilho armado, fechar acima/abaixo da rápida gera sinal.
-            if armed == "buy" and close > f:
-                # sinal só vale se for o último candle (o candle "atual")
-                if i == len(data) - 1:
-                    return "buy"
-                armed = None  # disparou no passado; consome o gatilho
-                continue
-            if armed == "sell" and close < f:
-                if i == len(data) - 1:
-                    return "sell"
-                armed = None
-                continue
-
-            # 3) Armação: veio de cima (prev acima da rápida) + pullback (close <= rápida
-            #    ou <= média), dentro de alinhamento de alta → arma compra. Espelhado p/ venda.
-            if armed is None:
-                if up and prev_close > f and (close <= f or close <= m):
-                    armed = "buy"
-                elif down and prev_close < f and (close >= f or close >= m):
-                    armed = "sell"
+        # 3) Armação: veio de cima (prev acima da rápida) + pullback
+        #    (close <= rápida ou <= média), em alinhamento de alta → arma compra.
+        #    Espelhado para venda.
+        if self._armed is None:
+            if up and prev_close > f and (close <= f or close <= m):
+                self._armed = "buy"
+            elif down and prev_close < f and (close >= f or close >= m):
+                self._armed = "sell"
 
         return None
