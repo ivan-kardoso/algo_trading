@@ -99,9 +99,6 @@ class MemoryRepository(IMarketDataRepository):
             candles = await self._download_initial()
         else:
             candles = await self._download_incremental()
-            if not candles:
-                self._log.info("Nenhum candle novo disponível.")
-                return
 
         self._transform.validate(candles, self._source.timeframe_ms)
         self._merge_and_trim(candles)
