@@ -60,7 +60,9 @@ class TripleEmaStrategy(IStrategyPort):
             return None
 
         close = candles[i][px]
+        prev_open = candles[i - 1][1]
         prev_close = candles[i - 1][px]
+        prev_f = data.ema_fast[i - 1]
 
         up = f > m > s  # alinhamento de alta
         down = f < m < s  # alinhamento de baixa
@@ -83,10 +85,12 @@ class TripleEmaStrategy(IStrategyPort):
         # 3) Armação: veio de cima (prev acima da rápida) + pullback
         #    (close <= rápida ou <= média), em alinhamento de alta → arma compra.
         #    Espelhado para venda.
-        if self._armed is None:
-            if up and prev_close > f and (close <= f or close <= m):
+        if self._armed is None and prev_f is not None:
+            prev_above = prev_open > prev_f and prev_close > prev_f
+            prev_below = prev_open < prev_f and prev_close < prev_f
+            if up and prev_above and (close <= f or close <= m):
                 self._armed = "buy"
-            elif down and prev_close < f and (close >= f or close >= m):
+            elif down and prev_below and (close >= f or close >= m):
                 self._armed = "sell"
 
         return None
