@@ -29,7 +29,9 @@ def _resolve_candle_limit(data: DataConfig, timeframe_ms: int) -> int:
     if data.candle_limit is not None:
         return data.candle_limit
     if data.since is None:
-        raise ValueError("'since' precisa ser informado quando candle_limit não está definido")
+        raise ValueError(
+            "'since' precisa ser informado quando candle_limit não está definido"
+        )
     since_dt = datetime.strptime(data.since, "%d/%m/%Y").replace(tzinfo=timezone.utc)
     since_ms = int(since_dt.timestamp() * 1000)
     now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
@@ -151,7 +153,7 @@ async def build_symbol_runner(
 
     # Seleciona a implementação da estratégia pelo nome declarado no par.
     if asset.strategy == "triple-ema":
-        strategy = TripleEmaStrategy(strategy_settings)
+        strategy = TripleEmaStrategy(strategy_settings, log)
     else:
         strategy = NullStrategy()
 

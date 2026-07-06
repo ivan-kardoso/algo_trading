@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ...domain.models.indicator_data import IndicatorData
 from ...domain.ports import IMarketDataRepository, IStrategyPort, OHLCVData
 from ...domain.state_machine.transitions import (
     ApplyStrategyEvent,
@@ -35,24 +36,47 @@ def handle_apply_strategy(
     return ApplyStrategyEvent.HAS_DATA, processed
 
 
+# def handle_check_signal(
+#     strategy: IStrategyPort,
+#     data: OHLCVData | None,
+#     symbol: str,
+#     log: Logger,
+# ) -> CheckSignalEvent:
+#     """Consulta a estratégia para sinal de entrada no último candle."""
+#     if data is None:
+#         return CheckSignalEvent.NO_DATA
+
+#     signal = strategy.check_signal(data)
+
+#     if signal == "buy":
+#         log.info(f"[{symbol}] Sinal de COMPRA.")
+#         return CheckSignalEvent.BUY
+#     if signal == "sell":
+#         log.info(f"[{symbol}] Sinal de VENDA.")
+#         return CheckSignalEvent.SELL
+
+#     log.info(f"[{symbol}] Sem sinal. Aguardando próximo candle.")
+#     return CheckSignalEvent.NO_SIGNAL
+
+
+# HANDLE DE TESTE
 def handle_check_signal(
     strategy: IStrategyPort,
-    data: OHLCVData | None,
+    data: IndicatorData | None,
     symbol: str,
     log: Logger,
 ) -> CheckSignalEvent:
-    """Consulta a estratégia para sinal de entrada no último candle."""
+    """TESTE: apenas checagem de alinhamento das EMAs (sem sinal de entrada)."""
     if data is None:
         return CheckSignalEvent.NO_DATA
 
-    signal = strategy.check_signal(data)
+    i = len(data.candles) - 1
+    f = data.ema_fast[i]
+    m = data.ema_medium[i]
+    s = data.ema_slow[i]
 
-    if signal == "buy":
-        log.info(f"[{symbol}] Sinal de COMPRA.")
-        return CheckSignalEvent.BUY
-    if signal == "sell":
-        log.info(f"[{symbol}] Sinal de VENDA.")
-        return CheckSignalEvent.SELL
+    if f is None or m is None or s is None:
+        return CheckSignalEvent.NO_SIGNAL
 
-    log.info(f"[{symbol}] Sem sinal. Aguardando próximo candle.")
+    strategy._check_alignment(f, m, s)  # type: ignore[attr-defined]
     return CheckSignalEvent.NO_SIGNAL
