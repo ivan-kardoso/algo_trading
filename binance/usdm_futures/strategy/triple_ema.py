@@ -65,58 +65,15 @@ class TripleEmaStrategy(IStrategyPort):
 
     def check_signal(self, data: IndicatorData) -> Literal["buy", "sell"] | None:
         candles = data.candles
-        if len(candles) < 2:
+        if not candles:
             return None
 
-        px = self._field_index
-        i = len(candles) - 1  # candle atual (o que acabou de fechar)
-
-        # Validação #1: a série precisa avançar. Só processa se o timestamp
-        # do candle atual for maior que o do último candle já processado.
-        current_ts = candles[i][0]
-        if self._last_ts is not None and current_ts <= self._last_ts:
-            return None
-        self._last_ts = current_ts
-
+        i = len(candles) - 1
         f = data.ema_fast[i]
         m = data.ema_medium[i]
         s = data.ema_slow[i]
-        # EMAs ainda não aquecidas: sem base para avaliar.
         if f is None or m is None or s is None:
             return None
 
-        close = candles[i][px]
-        prev_open = candles[i - 1][1]
-        prev_close = candles[i - 1][px]
-        prev_f = data.ema_fast[i - 1]
-
-        up = f > m > s  # alinhamento de alta
-        down = f < m < s  # alinhamento de baixa
-
-        # 1) Desarme (precede tudo): fechar contra a lenta zera o gatilho.
-        if self._armed == "buy" and close < s:
-            self._armed = None
-        elif self._armed == "sell" and close > s:
-            self._armed = None
-
-        # 2) Disparo: com gatilho armado, o primeiro candle que fecha acima
-        #    (compra) / abaixo (venda) da rápida é o sinal. Consome o gatilho.
-        if self._armed == "buy" and close > f:
-            self._armed = None
-            return "buy"
-        if self._armed == "sell" and close < f:
-            self._armed = None
-            return "sell"
-
-        # 3) Armação: veio de cima (prev acima da rápida) + pullback
-        #    (close <= rápida ou <= média), em alinhamento de alta → arma compra.
-        #    Espelhado para venda.
-        if self._armed is None and prev_f is not None:
-            prev_above = prev_open > prev_f and prev_close > prev_f
-            prev_below = prev_open < prev_f and prev_close < prev_f
-            if up and prev_above and (close <= f or close <= m):
-                self._armed = "buy"
-            elif down and prev_below and (close >= f or close >= m):
-                self._armed = "sell"
-
+        self._check_alignment(f, m, s)
         return None
