@@ -63,6 +63,72 @@ class TripleEmaStrategy(IStrategyPort):
 
         return alignment
 
+    def _check_buy_trigger(self, data: IndicatorData, i: int) -> bool:
+        candles = data.candles
+        px = self._field_index
+
+        f = data.ema_fast[i]
+        s = data.ema_slow[i]
+        if f is None or s is None:
+            return False
+
+        close = candles[i][px]
+        open_ = candles[i][1]
+
+        # Pullback: fechamento estritamente entre a lenta e a rápida.
+        if not (s < close < f):
+            return False
+
+        # (1) Abertura do candle atual acima da rápida dele mesmo.
+        if open_ > f:
+            self._log.info("Gatilho de compra armado")
+            return True
+
+        # (2) Senão, olha o candle anterior.
+        if i - 1 < 0:
+            return False
+        prev_f = data.ema_fast[i - 1]
+        prev_open = candles[i - 1][1]
+        if prev_f is None:
+            return False
+        if prev_open > prev_f:
+            self._log.info("Gatilho de compra armado")
+            return True
+        return False
+
+    def _check_sell_trigger(self, data: IndicatorData, i: int) -> bool:
+        candles = data.candles
+        px = self._field_index
+
+        f = data.ema_fast[i]
+        s = data.ema_slow[i]
+        if f is None or s is None:
+            return False
+
+        close = candles[i][px]
+        open_ = candles[i][1]
+
+        # Pullback: fechamento estritamente entre a rápida e a lenta.
+        if not (f < close < s):
+            return False
+
+        # (1) Abertura do candle atual abaixo da rápida dele mesmo.
+        if open_ < f:
+            self._log.info("Gatilho de venda armado")
+            return True
+
+        # (2) Senão, olha o candle anterior.
+        if i - 1 < 0:
+            return False
+        prev_f = data.ema_fast[i - 1]
+        prev_open = candles[i - 1][1]
+        if prev_f is None:
+            return False
+        if prev_open < prev_f:
+            self._log.info("Gatilho de venda armado")
+            return True
+        return False
+
     def check_signal(self, data: IndicatorData) -> Literal["buy", "sell"] | None:
         candles = data.candles
         if not candles:
