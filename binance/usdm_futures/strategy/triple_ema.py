@@ -141,5 +141,11 @@ class TripleEmaStrategy(IStrategyPort):
         if f is None or m is None or s is None:
             return None
 
-        self._check_alignment(f, m, s)
+        alignment = self._check_alignment(f, m, s)
+
+        if alignment == "buy":
+            self._check_buy_trigger(data, i)
+        elif alignment == "sell":
+            self._check_sell_trigger(data, i)
+
         return None
