@@ -26,7 +26,7 @@ class TripleEmaStrategy(IStrategyPort):
         self._settings = settings
         self._field_index = _FIELD_INDEX[settings.field]
         self._log = log
-        self._last_alignment: Literal["buy", "sell"] | None = None
+        self._last_alignment: Literal["buy", "sell", "init"] | None = "init"
 
         # Estado do gatilho (memória entre candles).
         self._armed: Literal["buy", "sell"] | None = None
