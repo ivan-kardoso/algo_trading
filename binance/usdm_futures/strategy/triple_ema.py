@@ -32,6 +32,11 @@ class TripleEmaStrategy(IStrategyPort):
         self._armed: Literal["buy", "sell"] | None = None
         # Timestamp do último candle já processado (garante avanço na série).
         self._last_ts: float | None = None
+        # Trava do alinhamento inicial: o alinhamento presente no arranque é
+        # "ignorado" (não opera) até que ocorra a primeira mudança. Depois
+        # disso a trava é liberada definitivamente.
+        self._initial_lock_pending: bool = True
+        self._blocked_alignment: Literal["buy", "sell"] | None = None
 
     def apply_indicators(self, data: OHLCVData) -> IndicatorData:
         series = [row[self._field_index] for row in data]
@@ -193,6 +198,27 @@ class TripleEmaStrategy(IStrategyPort):
             return None
 
         alignment = self._check_alignment(f, m, s)
+
+        # Trava do alinhamento inicial: no primeiro candle, registra o
+        # alinhamento de arranque. Enquanto o alinhamento não mudar em relação
+        # a esse inicial, o bot não opera. A primeira mudança libera de vez.
+        if self._initial_lock_pending:
+            self._blocked_alignment = alignment
+            self._initial_lock_pending = False
+            if alignment is not None:
+                self._log.info(
+                    f"Alinhamento inicial de "
+                    f"{'compra' if alignment == 'buy' else 'venda'} "
+                    f"ignorado — aguardando reversão"
+                )
+
+        if self._blocked_alignment is not None:
+            if alignment == self._blocked_alignment:
+                # Ainda no alinhamento inicial travado: não opera.
+                return None
+            # Alinhamento mudou: libera a trava definitivamente.
+            self._log.info("Trava inicial liberada — operação habilitada")
+            self._blocked_alignment = None
 
         # Já existe gatilho armado: gerencia disparo/desarme.
         if self._armed is not None:
