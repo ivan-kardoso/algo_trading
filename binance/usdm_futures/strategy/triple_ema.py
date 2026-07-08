@@ -194,6 +194,11 @@ class TripleEmaStrategy(IStrategyPort):
 
         alignment = self._check_alignment(f, m, s)
 
+        # Já existe gatilho armado: gerencia disparo/desarme.
+        if self._armed is not None:
+            return self._check_armed_signal(data, i, alignment)
+
+        # Sem gatilho: tenta armar conforme o alinhamento.
         if alignment == "buy":
             self._check_buy_trigger(data, i)
         elif alignment == "sell":
