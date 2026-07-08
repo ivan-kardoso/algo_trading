@@ -1,5 +1,5 @@
 name = "triple-ema"
 field = "close"
-fast_period = 25
-medium_period = 50
-slow_period = 100
+fast_period = 13
+medium_period = 26
+slow_period = 52

@@ -3,7 +3,7 @@ strategy = "triple-ema"
 sandbox = true
 
 [data]
-timeframe = "1m"
+timeframe = "5m"
 since = ""
 candle_limit = 150
 
