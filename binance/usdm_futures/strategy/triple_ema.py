@@ -76,7 +76,7 @@ class TripleEmaStrategy(IStrategyPort):
         open_ = candles[i][1]
 
         # Pullback: fechamento estritamente entre a lenta e a rápida.
-        if not (s < close < f):
+        if not (s < close <= f):
             return False
 
         # (1) Abertura do candle atual acima da rápida dele mesmo.
@@ -109,7 +109,7 @@ class TripleEmaStrategy(IStrategyPort):
         open_ = candles[i][1]
 
         # Pullback: fechamento estritamente entre a rápida e a lenta.
-        if not (f < close < s):
+        if not (f <= close < s):
             return False
 
         # (1) Abertura do candle atual abaixo da rápida dele mesmo.
@@ -128,6 +128,57 @@ class TripleEmaStrategy(IStrategyPort):
             self._log.info("Gatilho de venda armado")
             return True
         return False
+
+    def _check_armed_signal(
+        self, data: IndicatorData, i: int, alignment: Literal["buy", "sell"] | None
+    ) -> Literal["buy", "sell"] | None:
+        candles = data.candles
+        px = self._field_index
+        f = data.ema_fast[i]
+        s = data.ema_slow[i]
+        if f is None or s is None:
+            return None
+
+        close = candles[i][px]
+        side = self._armed
+
+        if side == "buy":
+            # 1) alinhamento perdido
+            if alignment != "buy":
+                self._log.info("Gatilho de compra desarmado: alinhamento perdido")
+                self._armed = None
+                return None
+            # 2) fechou abaixo da lenta
+            if close < s:
+                self._log.info(
+                    "Gatilho de compra desarmado: fechou abaixo da média lenta"
+                )
+                self._armed = None
+                return None
+            # 3) fechou acima da rápida -> dispara
+            if close > f:
+                self._log.info("Sinal de COMPRA detectado")
+                self._armed = None
+                return "buy"
+            # 4) segue armado
+            return None
+
+        if side == "sell":
+            if alignment != "sell":
+                self._log.info("Gatilho de venda desarmado: alinhamento perdido")
+                self._armed = None
+                return None
+            if close > s:
+                self._log.info("Gatilho de venda desarmado: fechou acima da média lenta")
+                self._armed = None
+                return None
+            if close < f:
+                self._log.info("Sinal de VENDA detectado")
+                self._armed = None
+                return "sell"
+            return None
+
+        return None
 
     def check_signal(self, data: IndicatorData) -> Literal["buy", "sell"] | None:
         candles = data.candles
