@@ -3,7 +3,8 @@ strategy = "triple-ema"
 sandbox = false
 
 [data]
-timeframe = "5m"
+trend_timeframe = "4h"
+signal_timeframe = "5m"
 since = ""
 candle_limit = 150
 

@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING
 
-
-from ...domain.ports import IMarketDataRepository, IStrategyPort, OHLCVData
+from ...domain.models.indicator_data import IndicatorData
+from ...domain.ports import IMarketDataRepository, IStrategyPort
 from ...domain.state_machine.transitions import (
     ApplyStrategyEvent,
     CheckSignalEvent,
@@ -17,39 +17,40 @@ if TYPE_CHECKING:
 
 def handle_apply_strategy(
     strategy: IStrategyPort,
-    repo: IMarketDataRepository,
+    trend_repo: IMarketDataRepository,
+    signal_repo: IMarketDataRepository,
     symbol: str,
     log: Logger,
-) -> tuple[ApplyStrategyEvent, OHLCVData | None]:
-    """Aplica indicadores ao dataset atual.
+) -> tuple[ApplyStrategyEvent, IndicatorData | None, IndicatorData | None]:
+    """Aplica indicadores aos datasets de trend e signal.
 
-    Retorna (event, dataset_processado). O dataset processado é passado
-    adiante ao handle_check_signal pelo runner; nunca persiste em disco.
+    Retorna (event, trend_processado, signal_processado). Os datasets
+    processados são passados adiante ao handle_check_signal pelo runner;
+    nunca persistem em disco.
     """
-    data = repo.get_dataset()
-    if not data:
+    trend_data = trend_repo.get_dataset()
+    signal_data = signal_repo.get_dataset()
+    if not trend_data or not signal_data:
         log.info(f"[{symbol}] Dataset vazio. Aguardando próximo candle.")
-        return ApplyStrategyEvent.EMPTY, None
+        return ApplyStrategyEvent.EMPTY, None, None
 
-    processed = strategy.apply_indicators(data)
+    trend_processed, signal_processed = strategy.apply_indicators(trend_data, signal_data)
     log.info(f"[{symbol}] Indicadores calculados.")
-    return ApplyStrategyEvent.HAS_DATA, processed
+    return ApplyStrategyEvent.HAS_DATA, trend_processed, signal_processed
 
 
 def handle_check_signal(
     strategy: IStrategyPort,
-    data: OHLCVData | None,
+    trend_data: IndicatorData | None,
+    signal_data: IndicatorData | None,
     symbol: str,
     log: Logger,
 ) -> CheckSignalEvent:
     """Consulta a estratégia para sinal de entrada no último candle."""
-    if data is None:
+    if trend_data is None or signal_data is None:
         return CheckSignalEvent.NO_DATA
 
-    # strategy.check_signal expects an IndicatorData-like object; at runtime
-    # the repo provides OHLCVData which is acceptable. Cast to Any to satisfy
-    # static type checkers.
-    signal = strategy.check_signal(cast(Any, data))
+    signal = strategy.check_signal(trend_data, signal_data)
 
     if signal == "buy":
         log.info(f"[{symbol}] Sinal de COMPRA.")
@@ -60,26 +61,3 @@ def handle_check_signal(
 
     log.info(f"[{symbol}] Sem sinal. Aguardando próximo candle.")
     return CheckSignalEvent.NO_SIGNAL
-
-
-# HANDLE DE TESTE
-# def handle_check_signal(
-#     strategy: IStrategyPort,
-#     data: IndicatorData | None,
-#     symbol: str,
-#     log: Logger,
-# ) -> CheckSignalEvent:
-#     """TESTE: apenas checagem de alinhamento das EMAs (sem sinal de entrada)."""
-#     if data is None:
-#         return CheckSignalEvent.NO_DATA
-
-#     i = len(data.candles) - 1
-#     f = data.ema_fast[i]
-#     m = data.ema_medium[i]
-#     s = data.ema_slow[i]
-
-#     if f is None or m is None or s is None:
-#         return CheckSignalEvent.NO_SIGNAL
-
-#     strategy._check_alignment(f, m, s)  # type: ignore[attr-defined]
-#     return CheckSignalEvent.NO_SIGNAL

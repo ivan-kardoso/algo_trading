@@ -37,6 +37,10 @@ class MemoryRepository(IMarketDataRepository):
     def get_dataset(self) -> OHLCVData:
         return self._dataset
 
+    @property
+    def timeframe_ms(self) -> int:
+        return self._source.timeframe_ms
+
     def seconds_until_next_candle(self) -> int:
         timeframe_s = self._source.timeframe_ms // 1000
         now_s = int(datetime.now(timezone.utc).timestamp())

@@ -11,7 +11,11 @@ if TYPE_CHECKING:
 
 class IStrategyPort(ABC):
     @abstractmethod
-    def apply_indicators(self, data: OHLCVData) -> IndicatorData: ...
+    def apply_indicators(
+        self, trend_data: OHLCVData, signal_data: OHLCVData
+    ) -> tuple[IndicatorData, IndicatorData]: ...
 
     @abstractmethod
-    def check_signal(self, data: IndicatorData) -> Literal["buy", "sell"] | None: ...
+    def check_signal(
+        self, trend: IndicatorData, signal: IndicatorData
+    ) -> Literal["buy", "sell"] | None: ...

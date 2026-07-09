@@ -31,3 +31,7 @@ class IMarketDataRepository(ABC):
 
     @abstractmethod
     def seconds_until_next_candle(self) -> int: ...
+
+    @property
+    @abstractmethod
+    def timeframe_ms(self) -> int: ...

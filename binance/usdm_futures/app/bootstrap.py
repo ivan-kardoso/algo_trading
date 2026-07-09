@@ -120,20 +120,39 @@ async def build_symbol_runner(
     )
 
     # --- Camada de dados de mercado ---
-    source = OHLCVSource(
+    # Dois datasets independentes: trend (contexto/tendência) e signal
+    # (gatilho/sinal). candle_limit/since são únicos e aplicados aos dois.
+    trend_source = OHLCVSource(
         exchange=exchange,
         symbol=asset.symbol,
-        timeframe=asset.data.timeframe,
+        timeframe=asset.data.trend_timeframe,
+        log=log,
+    )
+    signal_source = OHLCVSource(
+        exchange=exchange,
+        symbol=asset.symbol,
+        timeframe=asset.data.signal_timeframe,
         log=log,
     )
 
     fetch_cfg = sys_settings.fetch
-    candle_limit = _resolve_candle_limit(asset.data, source.timeframe_ms)
+    trend_candle_limit = _resolve_candle_limit(asset.data, trend_source.timeframe_ms)
+    signal_candle_limit = _resolve_candle_limit(asset.data, signal_source.timeframe_ms)
 
-    repo = MemoryRepository(
-        source=source,
+    trend_repo = MemoryRepository(
+        source=trend_source,
         transform=OHLCVTransform(),
-        candle_limit=candle_limit,
+        candle_limit=trend_candle_limit,
+        max_rows=fetch_cfg.max_rows,
+        batch_limit=fetch_cfg.batch_limit,
+        fetch_retry_attempts=fetch_cfg.fetch_retry_attempts,
+        fetch_retry_delay=fetch_cfg.fetch_retry_delay,
+        log=log,
+    )
+    signal_repo = MemoryRepository(
+        source=signal_source,
+        transform=OHLCVTransform(),
+        candle_limit=signal_candle_limit,
         max_rows=fetch_cfg.max_rows,
         batch_limit=fetch_cfg.batch_limit,
         fetch_retry_attempts=fetch_cfg.fetch_retry_attempts,
@@ -166,7 +185,8 @@ async def build_symbol_runner(
         exchange_client=client,
         position_tracker=tracker,
         order_executor=executor,
-        market_data_repo=repo,
+        trend_repo=trend_repo,
+        signal_repo=signal_repo,
         strategy=strategy,
         log=log,
     )

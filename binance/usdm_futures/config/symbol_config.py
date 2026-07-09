@@ -12,11 +12,12 @@ from ..domain.models.timeframes import VALID_TIMEFRAMES
 class DataConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    timeframe: str
+    trend_timeframe: str
+    signal_timeframe: str
     since: str | None = None
     candle_limit: int | None = None
 
-    @field_validator("timeframe")
+    @field_validator("trend_timeframe", "signal_timeframe")
     @classmethod
     def validate_timeframe(cls, v: str) -> str:
         if v not in VALID_TIMEFRAMES:
