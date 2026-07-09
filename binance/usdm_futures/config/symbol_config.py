@@ -24,8 +24,8 @@ class DataConfig(BaseModel):
     )
     @classmethod
     def validate_timeframe(cls, v: str | None) -> str | None:
-        if v is None:
-            return v
+        if v is None or v.strip() == "":
+            return None
         if v not in VALID_TIMEFRAMES:
             raise ValueError(
                 f"Timeframe inválido: '{v}'. Valores aceitos: {sorted(VALID_TIMEFRAMES)}"
