@@ -10,7 +10,8 @@ from loguru import logger
 
 from ..config.schedule import load_system_settings
 from ..config.secrets import Secrets
-from ..logging.logger import setup_logging
+from ..config.symbol_config import load_asset_settings
+from ..logging.logger import get_pair_logger, setup_logging
 from .bootstrap import build_symbol_runner
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -36,7 +37,6 @@ async def main() -> None:
 
     # 3. Configura logging
     setup_logging(sys_settings.logging, _LOG_DIR)
-    logger.info("Bot USDM Futures iniciado.")
 
     # 4. Descobre TOMLs de pares
     if not _PAIRS_DIR.exists():
@@ -48,7 +48,16 @@ async def main() -> None:
         logger.critical(f"Nenhum arquivo .toml encontrado em: {_PAIRS_DIR}")
         sys.exit(1)
 
-    logger.info(f"{len(toml_paths)} arquivo(s) de par encontrado(s).")
+    # Execução isolada por par: vincula o logger geral desta execução ao
+    # arquivo do par já a partir do primeiro TOML encontrado, antes de
+    # qualquer outro evento ser emitido.
+    try:
+        log = get_pair_logger(load_asset_settings(str(toml_paths[0])).symbol)
+    except Exception:
+        log = logger
+
+    log.info("Bot USDM Futures iniciado.")
+    log.info(f"{len(toml_paths)} arquivo(s) de par encontrado(s).")
 
     # 5. Inicializa runners (sequencial para conexões independentes por par)
     pairs: list[tuple] = []
@@ -58,15 +67,15 @@ async def main() -> None:
                 str(toml_path), sys_settings, secrets
             )
             pairs.append((runner, client))
-            logger.info(f"Par '{toml_path.name}' inicializado.")
+            log.info(f"Par '{toml_path.name}' inicializado.")
         except Exception as exc:
-            logger.error(f"Falha ao inicializar '{toml_path.name}': {exc}. Par ignorado.")
+            log.error(f"Falha ao inicializar '{toml_path.name}': {exc}. Par ignorado.")
 
     if not pairs:
-        logger.critical("Nenhum par inicializado com sucesso. Encerrando.")
+        log.critical("Nenhum par inicializado com sucesso. Encerrando.")
         sys.exit(1)
 
-    logger.info(f"{len(pairs)} par(es) ativo(s). Iniciando execução concorrente...")
+    log.info(f"{len(pairs)} par(es) ativo(s). Iniciando execução concorrente...")
 
     # 6. Executa todos os pares concorrentemente
     tasks: list[asyncio.Task] = [
@@ -78,20 +87,20 @@ async def main() -> None:
         results = await asyncio.gather(*tasks, return_exceptions=True)
         for task, result in zip(tasks, results):
             if isinstance(result, Exception) and not isinstance(result, asyncio.CancelledError):
-                logger.error(f"Par '{task.get_name()}' encerrou com erro: {result}")
+                log.error(f"Par '{task.get_name()}' encerrou com erro: {result}")
     except asyncio.CancelledError:
-        logger.info("Encerramento solicitado. Aguardando tarefas...")
+        log.info("Encerramento solicitado. Aguardando tarefas...")
         for task in tasks:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
     finally:
-        logger.info("Fechando conexões com a exchange...")
+        log.info("Fechando conexões com a exchange...")
         for _, client in pairs:
             try:
                 await client.close()
             except Exception as exc:
-                logger.warning(f"Erro ao fechar conexão: {exc}")
-        logger.info("Bot encerrado.")
+                log.warning(f"Erro ao fechar conexão: {exc}")
+        log.info("Bot encerrado.")
 
 
 if __name__ == "__main__":

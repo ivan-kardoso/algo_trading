@@ -1,1 +1,2 @@
-python -m binance.usdm_futures.app.main
+uv run python -m binance.usdm_futures.app.main
+scp ic@192.168.15.10:~/algo_trading/logs/btcusdt.log ~/

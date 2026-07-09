@@ -36,15 +36,6 @@ def setup_logging(config: LoggingConfig, log_dir: Path) -> None:
         colorize=True,
     )
 
-    logger.add(
-        log_dir / "bot.log",
-        level="INFO",
-        format=_FILE_FORMAT,
-        rotation=config.log_max_bytes,
-        retention=config.log_backup_count,
-        encoding="utf-8",
-    )
-
 
 def get_pair_logger(symbol: str) -> Logger:
     if _log_dir is None or _config is None:
@@ -58,7 +49,7 @@ def get_pair_logger(symbol: str) -> Logger:
             _log_dir / f"{clean}.log",
             level="INFO",
             format=_FILE_FORMAT,
-            filter=lambda record, c=clean: record["extra"].get("pair") == c,
+            filter=lambda record, c=clean: record["extra"].get("pair") in (c, None),
             rotation=_config.log_max_bytes,
             retention=_config.log_backup_count,
             encoding="utf-8",
