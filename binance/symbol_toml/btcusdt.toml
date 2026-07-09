@@ -5,8 +5,8 @@ sandbox = false
 [data]
 signal_timeframe = "5m"
 trend_timeframe = "4h"
-aux_timeframe_1 = ""
-aux_timeframe_2 = ""
+aux_timeframe_1 = "1h"
+aux_timeframe_2 = "15m"
 since = ""
 candle_limit = 150
 
