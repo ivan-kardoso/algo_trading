@@ -226,8 +226,10 @@ class TripleEmaStrategy(IStrategyPort):
 
         # Sem gatilho: tenta armar conforme o alinhamento.
         if alignment == "buy":
-            self._check_buy_trigger(data, i)
+            if self._check_buy_trigger(data, i):
+                self._armed = "buy"
         elif alignment == "sell":
-            self._check_sell_trigger(data, i)
+            if self._check_sell_trigger(data, i):
+                self._armed = "sell"
 
         return None
