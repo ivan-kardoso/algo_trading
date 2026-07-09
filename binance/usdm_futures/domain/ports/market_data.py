@@ -30,6 +30,9 @@ class IMarketDataRepository(ABC):
     def get_dataset(self) -> OHLCVData: ...
 
     @abstractmethod
+    def last_candle_ts(self) -> int | None: ...
+
+    @abstractmethod
     def seconds_until_next_candle(self) -> int: ...
 
     @property

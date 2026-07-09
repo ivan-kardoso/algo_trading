@@ -17,40 +17,38 @@ if TYPE_CHECKING:
 
 def handle_apply_strategy(
     strategy: IStrategyPort,
-    trend_repo: IMarketDataRepository,
-    signal_repo: IMarketDataRepository,
+    repos: dict[str, IMarketDataRepository],
     symbol: str,
     log: Logger,
-) -> tuple[ApplyStrategyEvent, IndicatorData | None, IndicatorData | None]:
-    """Aplica indicadores aos datasets de trend e signal.
+) -> tuple[ApplyStrategyEvent, dict[str, IndicatorData] | None]:
+    """Aplica indicadores aos datasets dos timeframes preenchidos.
 
-    Retorna (event, trend_processado, signal_processado). Os datasets
-    processados são passados adiante ao handle_check_signal pelo runner;
-    nunca persistem em disco.
+    Retorna (event, indicadores_processados). Os indicadores processados
+    são passados adiante ao handle_check_signal pelo runner; nunca
+    persistem em disco. Mapeados por papel (signal/trend/aux_1/aux_2),
+    contendo apenas os timeframes efetivamente preenchidos.
     """
-    trend_data = trend_repo.get_dataset()
-    signal_data = signal_repo.get_dataset()
-    if not trend_data or not signal_data:
+    datasets = {role: repo.get_dataset() for role, repo in repos.items()}
+    if any(not data for data in datasets.values()):
         log.info(f"[{symbol}] Dataset vazio. Aguardando próximo candle.")
-        return ApplyStrategyEvent.EMPTY, None, None
+        return ApplyStrategyEvent.EMPTY, None
 
-    trend_processed, signal_processed = strategy.apply_indicators(trend_data, signal_data)
+    processed = strategy.apply_indicators(datasets)
     log.info(f"[{symbol}] Indicadores calculados.")
-    return ApplyStrategyEvent.HAS_DATA, trend_processed, signal_processed
+    return ApplyStrategyEvent.HAS_DATA, processed
 
 
 def handle_check_signal(
     strategy: IStrategyPort,
-    trend_data: IndicatorData | None,
-    signal_data: IndicatorData | None,
+    processed: dict[str, IndicatorData] | None,
     symbol: str,
     log: Logger,
 ) -> CheckSignalEvent:
     """Consulta a estratégia para sinal de entrada no último candle."""
-    if trend_data is None or signal_data is None:
+    if processed is None:
         return CheckSignalEvent.NO_DATA
 
-    signal = strategy.check_signal(trend_data, signal_data)
+    signal = strategy.check_signal(processed)
 
     if signal == "buy":
         log.info(f"[{symbol}] Sinal de COMPRA.")

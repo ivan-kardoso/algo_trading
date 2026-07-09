@@ -37,6 +37,9 @@ class MemoryRepository(IMarketDataRepository):
     def get_dataset(self) -> OHLCVData:
         return self._dataset
 
+    def last_candle_ts(self) -> int | None:
+        return int(self._dataset[-1][0]) if self._dataset else None
+
     @property
     def timeframe_ms(self) -> int:
         return self._source.timeframe_ms

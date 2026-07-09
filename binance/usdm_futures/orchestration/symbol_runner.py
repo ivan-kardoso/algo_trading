@@ -71,8 +71,7 @@ class SymbolRunner:
         exchange_client: ExchangeClient,
         position_tracker: IPositionTracker,
         order_executor: IOrderExecutor,
-        trend_repo: IMarketDataRepository,
-        signal_repo: IMarketDataRepository,
+        repos: dict[str, IMarketDataRepository],
         strategy: IStrategyPort,
         log: Logger,
     ) -> None:
@@ -84,15 +83,16 @@ class SymbolRunner:
         self._client = exchange_client
         self._tracker = position_tracker
         self._executor = order_executor
-        self._trend_repo = trend_repo
-        self._signal_repo = signal_repo
+        self._repos = repos
+        self._signal_repo = repos["signal"]
+        self._other_repos = {
+            role: repo for role, repo in repos.items() if role != "signal"
+        }
         self._strategy = strategy
         self._log = log
 
         # Estado entre estados (não faz parte do RunContext pois é volátil)
-        self._last_trend_ts: int | None = None
-        self._processed_trend: IndicatorData | None = None
-        self._processed_signal: IndicatorData | None = None
+        self._processed: dict[str, IndicatorData] | None = None
         self._monitoring_started_at: datetime | None = None
 
     async def run(self) -> None:
@@ -175,37 +175,31 @@ class SymbolRunner:
         on_clean_orphans(self._ctx, event)
 
     async def _step_fetch_data(self) -> None:
-        event, last_trend_ts = await handle_fetch_data(
+        event = await handle_fetch_data(
             self._ctx,
             self._signal_repo,
-            self._trend_repo,
-            self._last_trend_ts,
+            self._other_repos,
             self._symbol,
             self._log,
         )
-        self._last_trend_ts = last_trend_ts
         on_fetch_data(self._ctx, event)
         if event != FetchDataEvent.SUCCESS:
-            self._processed_trend = None
-            self._processed_signal = None
+            self._processed = None
 
     async def _step_apply_strategy(self) -> None:
-        event, processed_trend, processed_signal = handle_apply_strategy(
+        event, processed = handle_apply_strategy(
             self._strategy,
-            self._trend_repo,
-            self._signal_repo,
+            self._repos,
             self._symbol,
             self._log,
         )
-        self._processed_trend = processed_trend
-        self._processed_signal = processed_signal
+        self._processed = processed
         on_apply_strategy(self._ctx, event)
 
     async def _step_check_signal(self) -> None:
         event = handle_check_signal(
             self._strategy,
-            self._processed_trend,
-            self._processed_signal,
+            self._processed,
             self._symbol,
             self._log,
         )

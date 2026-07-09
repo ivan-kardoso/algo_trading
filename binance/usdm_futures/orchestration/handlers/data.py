@@ -12,49 +12,49 @@ if TYPE_CHECKING:
     from loguru import Logger
 
 
-def _trend_candle_closed(trend_repo: IMarketDataRepository, last_trend_ts: int | None) -> bool:
-    """True se um novo candle de trend fechou desde `last_trend_ts`.
+def _candle_closed(repo: IMarketDataRepository) -> bool:
+    """True se um novo candle já fechou desde o último candle conhecido do repo.
 
-    `last_trend_ts` None significa que o trend ainda não foi baixado
-    (download inicial), então sempre é considerado "fechado" para forçar
-    a primeira atualização.
+    Sem dataset ainda (download inicial) é sempre considerado "fechado",
+    para forçar a primeira atualização.
     """
-    if last_trend_ts is None:
+    last_ts = repo.last_candle_ts()
+    if last_ts is None:
         return True
 
     now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
-    current_bucket = (now_ms // trend_repo.timeframe_ms) * trend_repo.timeframe_ms
-    return current_bucket > last_trend_ts
+    current_bucket = (now_ms // repo.timeframe_ms) * repo.timeframe_ms
+    return current_bucket > last_ts
 
 
 async def handle_fetch_data(
     ctx: RunContext,
     signal_repo: IMarketDataRepository,
-    trend_repo: IMarketDataRepository,
-    last_trend_ts: int | None,
+    other_repos: dict[str, IMarketDataRepository],
     symbol: str,
     log: Logger,
-) -> tuple[FetchDataEvent, int | None]:
+) -> FetchDataEvent:
     """Atualiza os datasets OHLCV em memória via repositories.
 
-    O dataset de signal é atualizado sempre. O dataset de trend só é
-    atualizado quando um novo candle de trend fechou desde `last_trend_ts`
-    (ou no download inicial, quando `last_trend_ts` ainda é None).
+    O dataset de signal é atualizado sempre. Cada dataset em `other_repos`
+    (trend/aux_1/aux_2, apenas os preenchidos) só é atualizado quando um
+    candle novo daquele timeframe fechou desde a última atualização (ou no
+    download inicial).
     """
     if not ctx.has_exchange:
         log.error(f"[{symbol}] Conexão com exchange ausente. ERROR STATE.")
-        return FetchDataEvent.DEPS_MISSING, last_trend_ts
+        return FetchDataEvent.DEPS_MISSING
 
     try:
         await signal_repo.update()
-        log.info(f"[{symbol}] Dataset atualizado.")
+        log.info(f"[{symbol}] Dataset de signal atualizado.")
 
-        if _trend_candle_closed(trend_repo, last_trend_ts):
-            await trend_repo.update()
-            last_trend_ts = int(trend_repo.get_dataset()[-1][0])
-            log.info(f"[{symbol}] Dataset de tendência atualizado.")
+        for role, repo in other_repos.items():
+            if _candle_closed(repo):
+                await repo.update()
+                log.info(f"[{symbol}] Dataset de {role} atualizado.")
 
-        return FetchDataEvent.SUCCESS, last_trend_ts
+        return FetchDataEvent.SUCCESS
     except Exception as exc:
         log.error(f"[{symbol}] Erro ao atualizar dataset: {exc}")
-        return FetchDataEvent.ERROR, last_trend_ts
+        return FetchDataEvent.ERROR

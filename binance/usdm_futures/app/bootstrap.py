@@ -24,6 +24,16 @@ from ..shared.market_hours import MarketHoursChecker
 from ..strategy import NullStrategy, TripleEmaStrategy
 
 
+# Papel → nome do campo em DataConfig. "signal" é sempre preenchido; os
+# demais são opcionais e só geram source/repo quando presentes no TOML.
+_ROLE_TIMEFRAME_FIELDS: dict[str, str] = {
+    "signal": "signal_timeframe",
+    "trend": "trend_timeframe",
+    "aux_1": "aux_timeframe_1",
+    "aux_2": "aux_timeframe_2",
+}
+
+
 def _resolve_candle_limit(data: DataConfig, timeframe_ms: int) -> int:
     """Converte config de dados em quantidade de candles para o carregamento inicial."""
     if data.candle_limit is not None:
@@ -120,45 +130,33 @@ async def build_symbol_runner(
     )
 
     # --- Camada de dados de mercado ---
-    # Dois datasets independentes: trend (contexto/tendência) e signal
-    # (gatilho/sinal). candle_limit/since são únicos e aplicados aos dois.
-    trend_source = OHLCVSource(
-        exchange=exchange,
-        symbol=asset.symbol,
-        timeframe=asset.data.trend_timeframe,
-        log=log,
-    )
-    signal_source = OHLCVSource(
-        exchange=exchange,
-        symbol=asset.symbol,
-        timeframe=asset.data.signal_timeframe,
-        log=log,
-    )
-
+    # Um par (source + repo) por timeframe preenchido no TOML (1 a 4:
+    # signal obrigatório; trend/aux_1/aux_2 opcionais). candle_limit/since
+    # são únicos e aplicados a todos os datasets.
     fetch_cfg = sys_settings.fetch
-    trend_candle_limit = _resolve_candle_limit(asset.data, trend_source.timeframe_ms)
-    signal_candle_limit = _resolve_candle_limit(asset.data, signal_source.timeframe_ms)
+    repos: dict[str, MemoryRepository] = {}
+    for role, field_name in _ROLE_TIMEFRAME_FIELDS.items():
+        timeframe = getattr(asset.data, field_name)
+        if timeframe is None:
+            continue
 
-    trend_repo = MemoryRepository(
-        source=trend_source,
-        transform=OHLCVTransform(),
-        candle_limit=trend_candle_limit,
-        max_rows=fetch_cfg.max_rows,
-        batch_limit=fetch_cfg.batch_limit,
-        fetch_retry_attempts=fetch_cfg.fetch_retry_attempts,
-        fetch_retry_delay=fetch_cfg.fetch_retry_delay,
-        log=log,
-    )
-    signal_repo = MemoryRepository(
-        source=signal_source,
-        transform=OHLCVTransform(),
-        candle_limit=signal_candle_limit,
-        max_rows=fetch_cfg.max_rows,
-        batch_limit=fetch_cfg.batch_limit,
-        fetch_retry_attempts=fetch_cfg.fetch_retry_attempts,
-        fetch_retry_delay=fetch_cfg.fetch_retry_delay,
-        log=log,
-    )
+        source = OHLCVSource(
+            exchange=exchange,
+            symbol=asset.symbol,
+            timeframe=timeframe,
+            log=log,
+        )
+        candle_limit = _resolve_candle_limit(asset.data, source.timeframe_ms)
+        repos[role] = MemoryRepository(
+            source=source,
+            transform=OHLCVTransform(),
+            candle_limit=candle_limit,
+            max_rows=fetch_cfg.max_rows,
+            batch_limit=fetch_cfg.batch_limit,
+            fetch_retry_attempts=fetch_cfg.fetch_retry_attempts,
+            fetch_retry_delay=fetch_cfg.fetch_retry_delay,
+            log=log,
+        )
 
     # --- Contexto da FSM ---
     mon_cfg = sys_settings.monitoring
@@ -185,8 +183,7 @@ async def build_symbol_runner(
         exchange_client=client,
         position_tracker=tracker,
         order_executor=executor,
-        trend_repo=trend_repo,
-        signal_repo=signal_repo,
+        repos=repos,
         strategy=strategy,
         log=log,
     )

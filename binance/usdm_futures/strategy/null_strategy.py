@@ -8,12 +8,12 @@ from ..domain.ports import IStrategyPort, OHLCVData
 
 class NullStrategy(IStrategyPort):
     def apply_indicators(
-        self, trend_data: OHLCVData, signal_data: OHLCVData
-    ) -> tuple[IndicatorData, IndicatorData]:
-        return (self._empty_indicators(trend_data), self._empty_indicators(signal_data))
+        self, datasets: dict[str, OHLCVData]
+    ) -> dict[str, IndicatorData]:
+        return {role: self._empty_indicators(data) for role, data in datasets.items()}
 
     def check_signal(
-        self, trend: IndicatorData, signal: IndicatorData
+        self, indicators: dict[str, IndicatorData]
     ) -> Literal["buy", "sell"] | None:
         return None
 
