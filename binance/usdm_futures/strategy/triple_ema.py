@@ -67,49 +67,6 @@ class TripleEmaStrategy(IStrategyPort):
 
         return alignment
 
-    def _is_trend_aligned(self, indicators: dict[str, IndicatorData]) -> Literal["buy", "sell"] | None:
-        trend = indicators.get("trend")
-        if trend is None:
-            return None
-
-        i = len(trend.candles) - 1
-        if i < 0:
-            return None
-
-        f = trend.ema_fast[i]
-        m = trend.ema_medium[i]
-        s = trend.ema_slow[i]
-        if f is None or m is None or s is None:
-            return None
-
-        return self._check_alignment("trend", f, m, s)
-
-    def _is_signal_aligned(self, indicators: dict[str, IndicatorData]) -> Literal["buy", "sell"] | None:
-        signal = indicators.get("signal")
-        if signal is None:
-            return None
-
-        i = len(signal.candles) - 1
-        if i < 0:
-            return None
-
-        f = signal.ema_fast[i]
-        m = signal.ema_medium[i]
-        s = signal.ema_slow[i]
-        if f is None or m is None or s is None:
-            return None
-
-        return self._check_alignment("signal", f, m, s)
-
     def check_signal(self, indicators: dict[str, IndicatorData]) -> Literal["buy", "sell"] | None:
-        trend_side = self._is_trend_aligned(indicators)
-        if trend_side is None:
-            return None
 
-        signal_side = self._is_signal_aligned(indicators)
-        if signal_side is None:
-            return None
-
-        # Trend alinhado (trend_side = "buy" ou "sell").
-        # O resto da estratégia vem aqui depois.
         return None
