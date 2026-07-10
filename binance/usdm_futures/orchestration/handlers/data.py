@@ -50,16 +50,12 @@ async def handle_fetch_data(
         updated: list[str] = []
 
         await signal_repo.update()
-        updated.append(
-            f"signal {timeframes['signal']} ({signal_repo.candle_count()})"
-        )
+        updated.append(f"{timeframes['signal']} ({signal_repo.candle_count()})")
 
         for role, repo in other_repos.items():
             if _candle_closed(repo):
                 await repo.update()
-                updated.append(
-                    f"{role} {timeframes[role]} ({repo.candle_count()})"
-                )
+                updated.append(f"{timeframes[role]} ({repo.candle_count()})")
 
         log.log("DATASET", f"[{symbol}] Datasets atualizados: {' -|- '.join(updated)}")
 

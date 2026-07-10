@@ -13,12 +13,8 @@ _log_dir: Path | None = None
 _config: LoggingConfig | None = None
 _registered_pairs: set[str] = set()
 
-_CONSOLE_FORMAT = (
-    "<green>{time:HH:mm:ss}</green> | <level>{level:<8}</level> | <level>{message}</level>"
-)
-_FILE_FORMAT = (
-    "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level:<8} | {name}:{line} | {message}"
-)
+_CONSOLE_FORMAT = "<green>{time:HH:mm:ss}</green> | <level>{level:<8}</level> | <level>{message}</level>"
+_FILE_FORMAT = "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level:<8} | {name}:{line} | {message}"
 
 
 def setup_logging(config: LoggingConfig, log_dir: Path) -> None:
@@ -30,9 +26,11 @@ def setup_logging(config: LoggingConfig, log_dir: Path) -> None:
     logger.remove()
 
     logger.level("INFO", color="<dim>")
-    logger.level("DATASET", no=22, color="<dim><cyan>")
+    # logger.level("DATASET", no=22, color="<dim><cyan>")
+    logger.level("DATASET", no=22, color="<cyan>")
     logger.level("POS_OPEN", no=23, color="<green><bold>")
     logger.level("POS_CLOSE", no=24, color="<magenta><bold>")
+    logger.level("TREND", no=25, color="<blue>")
 
     logger.add(
         sys.stderr,

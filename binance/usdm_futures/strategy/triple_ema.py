@@ -48,9 +48,9 @@ class TripleEmaStrategy(IStrategyPort):
         if alignment != previous:
             timeframe = self._timeframes.get(role, role)
             if alignment == "buy":
-                self._log.info(f"timeframe {timeframe} alinhado para compra")
+                self._log.log("TREND", f"timeframe {timeframe} alinhado para compra")
             else:
-                self._log.info(f"timeframe {timeframe} alinhamento desconhecido")
+                self._log.log("TREND", f"timeframe {timeframe} alinhamento desconhecido")
             self._last_alignment[role] = alignment
 
         return alignment
