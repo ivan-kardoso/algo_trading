@@ -135,10 +135,12 @@ async def build_symbol_runner(
     # são únicos e aplicados a todos os datasets.
     fetch_cfg = sys_settings.fetch
     repos: dict[str, MemoryRepository] = {}
+    timeframes: dict[str, str] = {}
     for role, field_name in _ROLE_TIMEFRAME_FIELDS.items():
         timeframe = getattr(asset.data, field_name)
         if timeframe is None:
             continue
+        timeframes[role] = timeframe
 
         source = OHLCVSource(
             exchange=exchange,
@@ -170,7 +172,7 @@ async def build_symbol_runner(
 
     # Seleciona a implementação da estratégia pelo nome declarado no par.
     if asset.strategy == "triple-ema":
-        strategy = TripleEmaStrategy(strategy_settings, log)
+        strategy = TripleEmaStrategy(strategy_settings, timeframes, log)
     else:
         strategy = NullStrategy()
 

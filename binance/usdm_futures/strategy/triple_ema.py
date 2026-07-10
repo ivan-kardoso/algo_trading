@@ -27,8 +27,14 @@ _FIELD_INDEX: dict[str, int] = {
 
 
 class TripleEmaStrategy(IStrategyPort):
-    def __init__(self, settings: StrategySettings, log: Logger) -> None:
+    def __init__(
+        self,
+        settings: StrategySettings,
+        timeframes: dict[str, str],
+        log: Logger,
+    ) -> None:
         self._settings = settings
+        self._timeframes = timeframes
         self._log = log
         self._field_index = _FIELD_INDEX[settings.field]
         self._last_alignment: dict[str, Literal["buy", "sell"] | None] = {}

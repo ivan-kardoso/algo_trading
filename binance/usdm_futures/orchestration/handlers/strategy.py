@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Mapping
 
 from ...domain.models.indicator_data import IndicatorData
 from ...domain.ports import IMarketDataRepository, IStrategyPort
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 def handle_apply_strategy(
     strategy: IStrategyPort,
-    repos: dict[str, IMarketDataRepository],
+    repos: Mapping[str, IMarketDataRepository],
     symbol: str,
     log: Logger,
 ) -> tuple[ApplyStrategyEvent, dict[str, IndicatorData] | None]:

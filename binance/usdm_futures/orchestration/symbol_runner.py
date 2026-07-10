@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
 from ..config.schedule import SystemSettings
@@ -71,7 +72,7 @@ class SymbolRunner:
         exchange_client: ExchangeClient,
         position_tracker: IPositionTracker,
         order_executor: IOrderExecutor,
-        repos: dict[str, IMarketDataRepository],
+        repos: Mapping[str, IMarketDataRepository],
         strategy: IStrategyPort,
         log: Logger,
     ) -> None:
