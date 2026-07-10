@@ -40,6 +40,9 @@ class MemoryRepository(IMarketDataRepository):
     def last_candle_ts(self) -> int | None:
         return int(self._dataset[-1][0]) if self._dataset else None
 
+    def candle_count(self) -> int:
+        return len(self._dataset)
+
     @property
     def timeframe_ms(self) -> int:
         return self._source.timeframe_ms
@@ -109,4 +112,3 @@ class MemoryRepository(IMarketDataRepository):
 
         self._transform.validate(candles, self._source.timeframe_ms)
         self._merge_and_trim(candles)
-        self._log.info(f"Dataset atualizado: {len(self._dataset)} candles.")

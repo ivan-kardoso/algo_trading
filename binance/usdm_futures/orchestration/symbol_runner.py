@@ -73,6 +73,7 @@ class SymbolRunner:
         position_tracker: IPositionTracker,
         order_executor: IOrderExecutor,
         repos: Mapping[str, IMarketDataRepository],
+        timeframes: Mapping[str, str],
         strategy: IStrategyPort,
         log: Logger,
     ) -> None:
@@ -89,6 +90,7 @@ class SymbolRunner:
         self._other_repos = {
             role: repo for role, repo in repos.items() if role != "signal"
         }
+        self._timeframes = timeframes
         self._strategy = strategy
         self._log = log
 
@@ -180,6 +182,7 @@ class SymbolRunner:
             self._ctx,
             self._signal_repo,
             self._other_repos,
+            self._timeframes,
             self._symbol,
             self._log,
         )

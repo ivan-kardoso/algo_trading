@@ -31,6 +31,7 @@ async def handle_fetch_data(
     ctx: RunContext,
     signal_repo: IMarketDataRepository,
     other_repos: dict[str, IMarketDataRepository],
+    timeframes: dict[str, str],
     symbol: str,
     log: Logger,
 ) -> FetchDataEvent:
@@ -46,13 +47,21 @@ async def handle_fetch_data(
         return FetchDataEvent.DEPS_MISSING
 
     try:
+        updated: list[str] = []
+
         await signal_repo.update()
-        log.info(f"[{symbol}] Dataset de signal atualizado.")
+        updated.append(
+            f"signal {timeframes['signal']} ({signal_repo.candle_count()})"
+        )
 
         for role, repo in other_repos.items():
             if _candle_closed(repo):
                 await repo.update()
-                log.info(f"[{symbol}] Dataset de {role} atualizado.")
+                updated.append(
+                    f"{role} {timeframes[role]} ({repo.candle_count()})"
+                )
+
+        log.info(f"[{symbol}] Datasets atualizados: {' -|- '.join(updated)}")
 
         return FetchDataEvent.SUCCESS
     except Exception as exc:

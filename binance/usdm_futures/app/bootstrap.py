@@ -186,6 +186,7 @@ async def build_symbol_runner(
         position_tracker=tracker,
         order_executor=executor,
         repos=repos,
+        timeframes=timeframes,
         strategy=strategy,
         log=log,
     )
