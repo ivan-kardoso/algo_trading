@@ -39,6 +39,22 @@ class TripleEmaStrategy(IStrategyPort):
         self._field_index = _FIELD_INDEX[settings.field]
         self._last_alignment: dict[str, Literal["buy", "sell"] | None] = {}
 
+    def _check_alignment(
+        self, role: str, f: float, m: float, s: float
+    ) -> Literal["buy"] | None:
+        alignment: Literal["buy"] | None = "buy" if f > m > s else None
+
+        previous = self._last_alignment.get(role, "init")
+        if alignment != previous:
+            timeframe = self._timeframes.get(role, role)
+            if alignment == "buy":
+                self._log.info(f"timeframe {timeframe} alinhado para compra")
+            else:
+                self._log.info(f"timeframe {timeframe} alinhamento desconhecido")
+            self._last_alignment[role] = alignment
+
+        return alignment
+
     def apply_indicators(
         self, datasets: dict[str, OHLCVData]
     ) -> dict[str, IndicatorData]:
@@ -56,4 +72,15 @@ class TripleEmaStrategy(IStrategyPort):
     def check_signal(
         self, indicators: dict[str, IndicatorData]
     ) -> Literal["buy", "sell"] | None:
-        raise NotImplementedError
+        for role, data in indicators.items():
+            i = len(data.candles) - 1
+            if i < 0:
+                continue
+            f = data.ema_fast[i]
+            m = data.ema_medium[i]
+            s = data.ema_slow[i]
+            if f is None or m is None or s is None:
+                continue
+            self._check_alignment(role, f, m, s)
+
+        return None
