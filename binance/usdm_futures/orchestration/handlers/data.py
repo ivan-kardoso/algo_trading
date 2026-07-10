@@ -57,7 +57,7 @@ async def handle_fetch_data(
                 await repo.update()
                 updated.append(f"{timeframes[role]} ({repo.candle_count()})")
 
-        log.log("DATASET", f"[{symbol}] Datasets atualizados: {' -|- '.join(updated)}")
+        log.log("DATASET", f"[{symbol}] Datasets atualizados: {' | '.join(updated)}")
 
         return FetchDataEvent.SUCCESS
     except Exception as exc:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from typing import TYPE_CHECKING
+from datetime import datetime, timedelta
 
 from ...domain.ports import IMarketDataRepository
 from ...domain.state_machine.transitions import RunContext, StandbyReason
@@ -48,7 +49,8 @@ async def handle_standby(
         if not ctx.has_data_pipeline:
             return  # on_standby vai para FETCH_DATA via fallback
         seconds = repo.seconds_until_next_candle() + candle_delay
-        log.info(f"Aguardando próximo candle ({seconds}s)...")
+        proximo = (datetime.now() + timedelta(seconds=seconds)).strftime("%H:%M:%S")
+        log.info(f"Próximo candle às {proximo}")
         await asyncio.sleep(seconds)
 
 
