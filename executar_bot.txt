@@ -1,2 +1,26 @@
 uv run python -m binance.usdm_futures.app.main
 scp ic@192.168.15.10:~/algo_trading/logs/btcusdt.log ~/
+
+
+Opção 1 — atualizar o que já existe (mais rápido):
+cd ~/algo_trading
+git fetch origin
+git reset --hard origin/main
+
+
+Opção 2 — baixar do zero (limpo):
+cd ~
+rm -rf algo_trading
+git clone https://github.com/ivan-kardoso/algo_trading.git
+cd algo_trading
+uv sync
+
+
+Cria e connecta em uma sessão tmux:
+tmux new-session -A -s mysession
+
+kill/delete the current session
+tmux kill-session -t mysession
+
+Attach to a session with the name mysession
+tmux attach -t mysession
