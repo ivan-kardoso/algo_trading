@@ -5,6 +5,7 @@ Multi-timeframe: recebe de 1 a 4 datasets mapeados por papel
 """
 
 from __future__ import annotations
+
 from typing import TYPE_CHECKING, Literal
 
 from ..config.strategy_config import StrategySettings
@@ -38,6 +39,9 @@ class TripleEmaStrategy(IStrategyPort):
         self._field_index = _FIELD_INDEX[settings.field]
         self._last_alignment: dict[str, Literal["buy", "sell"] | None] = {}
 
+    # Método do contrato IStrategyPort, chamado pelo handler (não por esta classe).
+    # Nome genérico de propósito: a interface serve a qualquer estratégia;
+    # aqui a implementação calcula 3 EMAs, mas o contrato não se amarra a isso.
     def apply_indicators(self, datasets: dict[str, OHLCVData]) -> dict[str, IndicatorData]:
         result: dict[str, IndicatorData] = {}
         for role, data in datasets.items():
@@ -50,23 +54,69 @@ class TripleEmaStrategy(IStrategyPort):
             )
         return result
 
-    def _check_alignment(self, role: str, f: float, m: float, s: float) -> Literal["buy", "sell"] | None:
-        alignment: Literal["buy", "sell"] | None = "buy" if f > m > s else "sell" if f < m < s else None
+    def _check_alignment(self, f: float, m: float, s: float) -> Literal["buy", "sell"] | None:
+        return "buy" if f > m > s else "sell" if f < m < s else None
 
-        previous = self._last_alignment.get(role, "init")
-        if alignment != previous:
-            timeframe = self._timeframes.get(role, role)
-            if alignment == "buy":
-                self._log.log("TREND", f"timeframe {timeframe} Alinhamento EMA para compra.")
-            elif alignment == "sell":
-                self._log.log("TREND", f"timeframe {timeframe} Alinhamento EMA para venda.")
-            else:
-                self._log.log("TREND", f"timeframe {timeframe} EMA sem alinhamento.")
+    def _is_trend_aligned(self, indicators: dict[str, IndicatorData]) -> Literal["buy", "sell"] | None:
+        trend = indicators.get("trend")
+        if trend is None:
+            return None
 
-            self._last_alignment[role] = alignment
+        i = len(trend.candles) - 1
+        if i < 0:
+            return None
+
+        f = trend.ema_fast[i]
+        m = trend.ema_medium[i]
+        s = trend.ema_slow[i]
+        if f is None or m is None or s is None:
+            return None
+
+        alignment = self._check_alignment(f, m, s)
+
+        timeframe = self._timeframes.get("trend", "trend")
+        if alignment == "buy":
+            self._log.log("TREND", f"timeframe {timeframe} Alinhamento EMA para compra.")
+        elif alignment == "sell":
+            self._log.log("TREND", f"timeframe {timeframe} Alinhamento EMA para venda.")
+        else:
+            self._log.log("TREND", f"timeframe {timeframe} EMA sem alinhamento.")
+
+        return alignment
+
+    def _is_signal_aligned(self, indicators: dict[str, IndicatorData]) -> Literal["buy", "sell"] | None:
+        signal = indicators.get("signal")
+        if signal is None:
+            return None
+
+        i = len(signal.candles) - 1
+        if i < 0:
+            return None
+
+        f = signal.ema_fast[i]
+        m = signal.ema_medium[i]
+        s = signal.ema_slow[i]
+        if f is None or m is None or s is None:
+            return None
+
+        alignment = self._check_alignment(f, m, s)
+
+        timeframe = self._timeframes.get("signal", "signal")
+        if alignment == "buy":
+            self._log.log("TREND", f"timeframe {timeframe} Alinhamento EMA para compra.")
+        elif alignment == "sell":
+            self._log.log("TREND", f"timeframe {timeframe} Alinhamento EMA para venda.")
+        else:
+            self._log.log("TREND", f"timeframe {timeframe} EMA sem alinhamento.")
 
         return alignment
 
     def check_signal(self, indicators: dict[str, IndicatorData]) -> Literal["buy", "sell"] | None:
+        trend_side = self._is_trend_aligned(indicators)
+        if trend_side is None:
+            return None
 
+        signal_side = self._is_signal_aligned(indicators)
+        if signal_side is None:
+            return None
         return None

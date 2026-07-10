@@ -86,7 +86,7 @@ market_open_hour = 9
 market_open_minute = 0
 
 # Fechamento: Sexta-feira às 17:00 (horário America/Sao_Paulo)
-market_close_day = 4
+market_close_day = 5
 market_close_hour = 17
 market_close_minute = 0
 
