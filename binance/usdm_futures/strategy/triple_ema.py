@@ -5,7 +5,6 @@ Multi-timeframe: recebe de 1 a 4 datasets mapeados por papel
 """
 
 from __future__ import annotations
-
 from typing import TYPE_CHECKING, Literal
 
 from ..config.strategy_config import StrategySettings
@@ -39,25 +38,7 @@ class TripleEmaStrategy(IStrategyPort):
         self._field_index = _FIELD_INDEX[settings.field]
         self._last_alignment: dict[str, Literal["buy", "sell"] | None] = {}
 
-    def _check_alignment(
-        self, role: str, f: float, m: float, s: float
-    ) -> Literal["buy"] | None:
-        alignment: Literal["buy"] | None = "buy" if f > m > s else None
-
-        previous = self._last_alignment.get(role, "init")
-        if alignment != previous:
-            timeframe = self._timeframes.get(role, role)
-            if alignment == "buy":
-                self._log.log("TREND", f"timeframe {timeframe} alinhado para compra")
-            else:
-                self._log.log("TREND", f"timeframe {timeframe} alinhamento desconhecido")
-            self._last_alignment[role] = alignment
-
-        return alignment
-
-    def apply_indicators(
-        self, datasets: dict[str, OHLCVData]
-    ) -> dict[str, IndicatorData]:
+    def apply_indicators(self, datasets: dict[str, OHLCVData]) -> dict[str, IndicatorData]:
         result: dict[str, IndicatorData] = {}
         for role, data in datasets.items():
             series = [row[self._field_index] for row in data]
@@ -69,18 +50,66 @@ class TripleEmaStrategy(IStrategyPort):
             )
         return result
 
-    def check_signal(
-        self, indicators: dict[str, IndicatorData]
-    ) -> Literal["buy", "sell"] | None:
-        for role, data in indicators.items():
-            i = len(data.candles) - 1
-            if i < 0:
-                continue
-            f = data.ema_fast[i]
-            m = data.ema_medium[i]
-            s = data.ema_slow[i]
-            if f is None or m is None or s is None:
-                continue
-            self._check_alignment(role, f, m, s)
+    def _check_alignment(self, role: str, f: float, m: float, s: float) -> Literal["buy", "sell"] | None:
+        alignment: Literal["buy", "sell"] | None = "buy" if f > m > s else "sell" if f < m < s else None
 
+        previous = self._last_alignment.get(role, "init")
+        if alignment != previous:
+            timeframe = self._timeframes.get(role, role)
+            if alignment == "buy":
+                self._log.log("TREND", f"timeframe {timeframe} Alinhamento EMA para compra.")
+            elif alignment == "sell":
+                self._log.log("TREND", f"timeframe {timeframe} Alinhamento EMA para venda.")
+            else:
+                self._log.log("TREND", f"timeframe {timeframe} EMA sem alinhamento.")
+
+            self._last_alignment[role] = alignment
+
+        return alignment
+
+    def _is_trend_aligned(self, indicators: dict[str, IndicatorData]) -> Literal["buy", "sell"] | None:
+        trend = indicators.get("trend")
+        if trend is None:
+            return None
+
+        i = len(trend.candles) - 1
+        if i < 0:
+            return None
+
+        f = trend.ema_fast[i]
+        m = trend.ema_medium[i]
+        s = trend.ema_slow[i]
+        if f is None or m is None or s is None:
+            return None
+
+        return self._check_alignment("trend", f, m, s)
+
+    def _is_signal_aligned(self, indicators: dict[str, IndicatorData]) -> Literal["buy", "sell"] | None:
+        signal = indicators.get("signal")
+        if signal is None:
+            return None
+
+        i = len(signal.candles) - 1
+        if i < 0:
+            return None
+
+        f = signal.ema_fast[i]
+        m = signal.ema_medium[i]
+        s = signal.ema_slow[i]
+        if f is None or m is None or s is None:
+            return None
+
+        return self._check_alignment("signal", f, m, s)
+
+    def check_signal(self, indicators: dict[str, IndicatorData]) -> Literal["buy", "sell"] | None:
+        trend_side = self._is_trend_aligned(indicators)
+        if trend_side is None:
+            return None
+
+        signal_side = self._is_signal_aligned(indicators)
+        if signal_side is None:
+            return None
+
+        # Trend alinhado (trend_side = "buy" ou "sell").
+        # O resto da estratégia vem aqui depois.
         return None

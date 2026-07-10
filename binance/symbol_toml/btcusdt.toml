@@ -3,10 +3,10 @@ strategy = "triple-ema"
 sandbox = false
 
 [data]
-signal_timeframe = "1m"
-trend_timeframe = "3m"
-aux_timeframe_1 = "5m"
-aux_timeframe_2 = "15m"
+signal_timeframe = "15m"
+trend_timeframe = "4h"
+aux_timeframe_1 = ""
+aux_timeframe_2 = ""
 since = ""
 candle_limit = 150
 
