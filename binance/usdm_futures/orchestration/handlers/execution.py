@@ -44,13 +44,13 @@ async def handle_opening_position(
         return OpeningPositionEvent.CHECK_FAILED, None
 
     side = ctx.signal_side
-    log.info(f"[{symbol}] Abrindo posição: {side.upper()}...")
+    log.log("POS_OPEN", f"[{symbol}] Abrindo posição: {side.upper()}...")
 
     result = await executor.open_order(side=side)
 
     if result.get("success"):
         entry_price: float | None = result.get("entry_price")
-        log.info(f"[{symbol}] Posição aberta! Preço: {entry_price:.8g}" if entry_price else f"[{symbol}] Posição aberta!")
+        log.log("POS_OPEN", f"[{symbol}] Posição aberta! Preço: {entry_price:.8g}" if entry_price else f"[{symbol}] Posição aberta!")
         return OpeningPositionEvent.SUCCESS, entry_price
 
     log.warning(f"[{symbol}] Falha ao abrir posição.")

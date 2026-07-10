@@ -53,7 +53,7 @@ async def handle_monitoring(
         return MonitoringEvent.STILL_ACTIVE
 
     # Posição encerrada
-    log.info(f"[{symbol}] Posição encerrada. Cancelando ordens residuais...")
+    log.log("POS_CLOSE", f"[{symbol}] Posição encerrada. Cancelando ordens residuais...")
     try:
         await executor.cancel_all_orders()
     except Exception as exc:
