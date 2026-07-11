@@ -37,7 +37,9 @@ class TripleEmaStrategy(IStrategyPort):
         self._timeframes = timeframes
         self._log = log
         self._field_index = _FIELD_INDEX[settings.field]
-        self._last_alignment: dict[str, Literal["buy", "sell"] | None] = {}
+        self._trend_lock_pending: bool = True
+        self._trend_blocked: Literal["buy", "sell"] | None = None
+        self._trend_released: bool = False
 
     # Método do contrato IStrategyPort, chamado pelo handler (não por esta classe).
     # Nome genérico de propósito: a interface serve a qualquer estratégia;
@@ -57,6 +59,26 @@ class TripleEmaStrategy(IStrategyPort):
     def _check_alignment(self, f: float, m: float, s: float) -> Literal["buy", "sell"] | None:
         return "buy" if f > m > s else "sell" if f < m < s else None
 
+    def _is_trend_released(self, trend_side: Literal["buy", "sell"] | None) -> bool:
+        if self._trend_released:
+            return True
+
+        if self._trend_lock_pending:
+            self._trend_blocked = trend_side
+            self._trend_lock_pending = False
+            if trend_side is not None:
+                self._log.log(
+                    "TREND",
+                    f"Alihamento inicial {'compra.' if self._trend_blocked == 'buy' else 'venda.' if self._trend_blocked == 'sell' else 'indefinido.'} Aguardando reversão.",
+                )
+
+        if trend_side != self._trend_blocked:
+            self._trend_released = True
+            self._log.log("TREND", "Trava liberada — operação habilitada.")
+            return True
+
+        return False
+
     def _is_trend_aligned(self, indicators: dict[str, IndicatorData]) -> Literal["buy", "sell"] | None:
         trend = indicators.get("trend")
         if trend is None:
@@ -72,9 +94,9 @@ class TripleEmaStrategy(IStrategyPort):
         if f is None or m is None or s is None:
             return None
 
+        timeframe = self._timeframes.get("trend", "trend")
         alignment = self._check_alignment(f, m, s)
 
-        timeframe = self._timeframes.get("trend", "trend")
         if alignment == "buy":
             self._log.log("TREND", f"timeframe {timeframe} Alinhamento EMA para compra.")
         elif alignment == "sell":
@@ -99,9 +121,9 @@ class TripleEmaStrategy(IStrategyPort):
         if f is None or m is None or s is None:
             return None
 
+        timeframe = self._timeframes.get("signal", "signal")
         alignment = self._check_alignment(f, m, s)
 
-        timeframe = self._timeframes.get("signal", "signal")
         if alignment == "buy":
             self._log.log("TREND", f"timeframe {timeframe} Alinhamento EMA para compra.")
         elif alignment == "sell":
@@ -113,10 +135,13 @@ class TripleEmaStrategy(IStrategyPort):
 
     def check_signal(self, indicators: dict[str, IndicatorData]) -> Literal["buy", "sell"] | None:
         trend_side = self._is_trend_aligned(indicators)
-        if trend_side is None:
+        signal_side = self._is_signal_aligned(indicators)
+
+        is_trend_lock = self._is_trend_released(trend_side)
+        if is_trend_lock is None:
             return None
 
-        signal_side = self._is_signal_aligned(indicators)
         if signal_side is None:
             return None
+
         return None
