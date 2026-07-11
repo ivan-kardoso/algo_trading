@@ -68,13 +68,13 @@ class TripleEmaStrategy(IStrategyPort):
             self._trend_lock_pending = False
             if trend_side is not None:
                 self._log.log(
-                    "TREND",
+                    "GATE",
                     f"Alihamento inicial {'compra.' if self._trend_blocked == 'buy' else 'venda.' if self._trend_blocked == 'sell' else 'indefinido.'} Aguardando reversão.",
                 )
 
         if trend_side != self._trend_blocked:
             self._trend_released = True
-            self._log.log("TREND", "Trava liberada — operação habilitada.")
+            self._log.log("GATE", "Trava liberada — operação habilitada.")
             return True
 
         return False
