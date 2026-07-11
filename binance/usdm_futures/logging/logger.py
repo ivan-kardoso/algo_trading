@@ -31,7 +31,8 @@ def setup_logging(config: LoggingConfig, log_dir: Path) -> None:
     logger.level("POS_OPEN", no=23, color="<green><bold>")
     logger.level("POS_CLOSE", no=24, color="<magenta><bold>")
     logger.level("TREND", no=25, color="<blue>")
-    logger.level("GATE", no=26, color="<red>")
+    logger.level("LOCK", no=26, color="<red>")
+    logger.level("UNLOCK", no=27, color="<yellow>")
 
     logger.add(
         sys.stderr,
