@@ -129,7 +129,7 @@ class TripleEmaStrategy(IStrategyPort):
         elif alignment == "sell":
             self._log.log("TREND", f"timeframe {timeframe} Alinhamento EMA para venda.")
         else:
-            self._log.log("TREND", f"timeframe {timeframe} EMA sem alinhamento.")
+            self._log.log("TREND", f"timeframe {timeframe} Alinhamento indefinido.")
 
         return alignment
 
