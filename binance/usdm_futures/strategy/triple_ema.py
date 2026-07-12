@@ -135,13 +135,18 @@ class TripleEmaStrategy(IStrategyPort):
 
     def check_signal(self, indicators: dict[str, IndicatorData]) -> Literal["buy", "sell"] | None:
         trend_side = self._is_trend_aligned(indicators)
+
+        if not self._is_trend_released(trend_side):
+            return None
+
+        if trend_side is None:
+            return None
+
         signal_side = self._is_signal_aligned(indicators)
-
-        released = self._is_trend_released(trend_side)
-        if not released:
+        if signal_side != trend_side:
             return None
 
-        if signal_side is None:
-            return None
+        # Cenário alinhado: trend e signal no mesmo lado (trend_side).
+        # Gatilho e sinal de entrada vêm aqui depois.
 
         return None
