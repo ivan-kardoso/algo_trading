@@ -4,7 +4,7 @@ sandbox = false
 
 [data]
 signal_timeframe = "15m"
-trend_timeframe = "4h"
+trend_timeframe = "1h"
 aux_timeframe_1 = ""
 aux_timeframe_2 = ""
 since = ""
