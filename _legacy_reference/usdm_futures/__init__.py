@@ -1,1 +1,0 @@
-"""USDM Futures Trading Bot"""
