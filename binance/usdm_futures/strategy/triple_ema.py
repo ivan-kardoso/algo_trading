@@ -40,6 +40,7 @@ class TripleEmaStrategy(IStrategyPort):
         self._trend_lock_pending: bool = True
         self._trend_blocked: Literal["buy", "sell"] | None = None
         self._trend_released: bool = False
+        self._armed: Literal["buy", "sell"] | None = None
 
     # Método do contrato IStrategyPort, chamado pelo handler (não por esta classe).
     # Nome genérico de propósito: a interface serve a qualquer estratégia;
@@ -180,7 +181,14 @@ class TripleEmaStrategy(IStrategyPort):
         if signal_side != trend_side:
             return None
 
+        signal_data = indicators.get("signal")
+        if signal_data is None:
+            return None
+
         # Cenário alinhado: trend e signal no mesmo lado (trend_side).
-        # Gatilho e sinal de entrada vêm aqui depois.
+        # Tenta armar o gatilho.
+        if trend_side == "buy":
+            if self._check_buy_trigger(signal_data):
+                self._armed = "buy"
 
         return None
