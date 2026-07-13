@@ -82,11 +82,11 @@ normalize_retry_delay_seconds=1.5
 [market_hours]
 # Abertura: Segunda-feira às 09:00 (horário America/Sao_Paulo)
 market_open_day = 1
-market_open_hour = 9
+market_open_hour = 0
 market_open_minute = 0
 
 # Fechamento: Sexta-feira às 17:00 (horário America/Sao_Paulo)
-market_close_day = 6
+market_close_day = 5
 market_close_hour = 0
 market_close_minute = 0
 
