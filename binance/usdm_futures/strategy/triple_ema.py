@@ -133,6 +133,40 @@ class TripleEmaStrategy(IStrategyPort):
 
         return alignment
 
+    def _check_buy_trigger(self, data: IndicatorData) -> bool:
+        candles = data.candles
+        i = len(candles) - 1
+        if i < 1:
+            return False
+
+        f = data.ema_fast[i]
+        s = data.ema_slow[i]
+        if f is None or s is None:
+            return False
+
+        open_ = candles[i][1]
+        close = candles[i][4]
+
+        # Pullback: fecha abaixo da rápida, mas abre acima da lenta.
+        if not (close < f and open_ > s):
+            return False
+
+        timeframe = self._timeframes.get("signal", "signal")
+
+        # (1) Veio de cima pelo próprio candle.
+        if open_ > f:
+            self._log.log("TREND", f"timeframe {timeframe} Gatilho de compra armado.")
+            return True
+
+        # (2) Senão, olha o candle anterior.
+        prev_f = data.ema_fast[i - 1]
+        prev_open = candles[i - 1][1]
+        if prev_f is not None and prev_open > prev_f:
+            self._log.log("TREND", f"timeframe {timeframe} Gatilho de compra armado.")
+            return True
+
+        return False
+
     def check_signal(self, indicators: dict[str, IndicatorData]) -> Literal["buy", "sell"] | None:
         trend_side = self._is_trend_aligned(indicators)
 
