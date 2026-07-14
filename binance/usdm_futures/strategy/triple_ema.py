@@ -141,18 +141,27 @@ class TripleEmaStrategy(IStrategyPort):
             return False
 
         f = data.ema_fast[i]
-        if f is None:
+        s = data.ema_slow[i]
+        if f is None or s is None:
             return False
 
         open_ = candles[i][1]
         close = candles[i][4]
 
-        # 1. O preço tocou ou fechou abaixo da média rápida?
-        if close <= f:
-            # 2. O preço veio de cima?
+        # 1. O preço tocou ou fechou abaixo ou igual a média rápida e acima da média lenta?
+        if f >= close >= s:
+            timeframe = self._timeframes.get("signal", "signal")
+
+            # 2. O preço veio de cima (candle atual)?
             if open_ > close:
-                timeframe = self._timeframes.get("signal", "signal")
                 self._log.log("TRIGGER", f"timeframe {timeframe} Gatilho de compra armado.")
+                return True
+
+            # 3. Senão, o preço veio de cima no candle anterior?
+            prev_f = data.ema_fast[i - 1]
+            prev_open = candles[i - 1][1]
+            if prev_f is not None and prev_open > prev_f:
+                self._log.log("TRIGGER", f"timeframe {timeframe} gatilho de compra armado.")
                 return True
 
         return False
