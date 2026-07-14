@@ -148,13 +148,14 @@ class TripleEmaStrategy(IStrategyPort):
         open_ = candles[i][1]
         close = candles[i][4]
 
-        # 1. O preço tocou ou fechou abaixo ou igual a média rápida e acima da média lenta?
+        # 1. O preço fechou abaixo ou igual a média rápida e acima da média lenta?
+        # f(média rápida) é maior ou igual a close, E close é maior ou igual a s(média lenta)
         if f >= close >= s:
             timeframe = self._timeframes.get("signal", "signal")
 
-            # 2. O preço veio de cima (candle atual)?
+            # 2. O preço veio de cima (candle atual / fechado)?
             if open_ > close:
-                self._log.log("TRIGGER", f"timeframe {timeframe} Gatilho de compra armado.")
+                self._log.log("TRIGGER", f"timeframe {timeframe} gatilho de compra armado.")
                 return True
 
             # 3. Senão, o preço veio de cima no candle anterior?
@@ -162,6 +163,39 @@ class TripleEmaStrategy(IStrategyPort):
             prev_open = candles[i - 1][1]
             if prev_f is not None and prev_open > prev_f:
                 self._log.log("TRIGGER", f"timeframe {timeframe} gatilho de compra armado.")
+                return True
+
+        return False
+
+    def _check_sell_trigger(self, data: IndicatorData) -> bool:
+        candles = data.candles
+        i = len(candles) - 1
+        if i < 0:
+            return False
+
+        f = data.ema_fast[i]
+        s = data.ema_slow[i]
+        if f is None or s is None:
+            return False
+
+        open_ = candles[i][1]
+        close = candles[i][4]
+
+        # 1. O preço fechou acima ou igual a média rápida e abaixo da média lenta?
+        # f(média rápida) é menor ou igual a close, E close é menor ou igual a s(média lenta)
+        if f <= close <= s:
+            timeframe = self._timeframes.get("signal", "signal")
+
+            # 2. O preço veio de baixo (candle atual / fechado)?
+            if open_ < close:
+                self._log.log("TRIGGER", f"timeframe {timeframe} gatilho de compra armado.")
+                return True
+
+            # 3. Senão, o preço veio de baixo no candle anterior?
+            prev_f = data.ema_fast[i - 1]
+            prev_open = candles[i - 1][1]
+            if prev_f is not None and prev_open < prev_f:
+                self._log.log("TRIGGER", f"timeframe {timeframe} gatilho de venda armado")
                 return True
 
         return False
@@ -188,5 +222,9 @@ class TripleEmaStrategy(IStrategyPort):
         if trend_side == "buy":
             if self._check_buy_trigger(signal_data):
                 self._armed = "buy"
+
+        elif trend_side == "sell":
+            if self._check_sell_trigger(signal_data):
+                self._armed = "sell"
 
         return None
