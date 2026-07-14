@@ -244,16 +244,7 @@ class TripleEmaStrategy(IStrategyPort):
         return None
 
     def check_signal(self, indicators: dict[str, IndicatorData]) -> Literal["buy", "sell"] | None:
-        sd = indicators.get("signal")
-        if sd is not None and sd.candles:
-            from datetime import datetime
 
-            last_ts = sd.candles[-1][0]
-            prev_ts = sd.candles[-2][0] if len(sd.candles) > 1 else 0
-            self._log.info(
-                f"DEBUG último candle: {datetime.fromtimestamp(last_ts / 1000).strftime('%H:%M:%S')} "
-                f"| penúltimo: {datetime.fromtimestamp(prev_ts / 1000).strftime('%H:%M:%S')}"
-            )
         trend_side = self._is_trend_aligned(indicators)
 
         if not self._is_trend_released(trend_side):

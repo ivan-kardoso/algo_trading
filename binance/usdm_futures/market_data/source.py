@@ -42,6 +42,7 @@ class OHLCVSource(IMarketDataSource):
                 since=since,
                 limit=limit,
             )
+
             if not candles:
                 return []
 

@@ -24,7 +24,7 @@ def _candle_closed(repo: IMarketDataRepository) -> bool:
 
     now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
     current_bucket = (now_ms // repo.timeframe_ms) * repo.timeframe_ms
-    return current_bucket > last_ts
+    return current_bucket - repo.timeframe_ms > last_ts
 
 
 async def handle_fetch_data(
