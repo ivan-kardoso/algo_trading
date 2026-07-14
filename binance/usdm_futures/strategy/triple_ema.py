@@ -156,14 +156,14 @@ class TripleEmaStrategy(IStrategyPort):
 
         # (1) Veio de cima pelo próprio candle.
         if open_ > f:
-            self._log.log("TREND", f"timeframe {timeframe} Gatilho de compra armado.")
+            self._log.log("TRIGGER", f"timeframe {timeframe} Gatilho de compra armado.")
             return True
 
         # (2) Senão, olha o candle anterior.
         prev_f = data.ema_fast[i - 1]
         prev_open = candles[i - 1][1]
         if prev_f is not None and prev_open > prev_f:
-            self._log.log("TREND", f"timeframe {timeframe} Gatilho de compra armado.")
+            self._log.log("TRIGGER", f"timeframe {timeframe} Gatilho de compra armado.")
             return True
 
         return False
