@@ -1,6 +1,6 @@
 symbol = "BTC/USDT:USDT"
 strategy = "triple-ema"
-sandbox = false
+sandbox = true
 
 [data]
 signal_timeframe = "1m"
