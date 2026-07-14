@@ -24,7 +24,7 @@ candle_fetch_delay_seconds = 3
 fetch_retry_attempts=10
 
 # Tempo de espera (segundos) entre tentativas de fetch (tipo: int, > 0)
-fetch_retry_delay=1
+fetch_retry_delay=2
 
 # Limite máximo de candles a baixar em um lote (tipo: int, > 100)
 batch_limit=500
