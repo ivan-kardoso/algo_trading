@@ -137,34 +137,23 @@ class TripleEmaStrategy(IStrategyPort):
     def _check_buy_trigger(self, data: IndicatorData) -> bool:
         candles = data.candles
         i = len(candles) - 1
-        if i < 1:
+        if i < 0:
             return False
 
         f = data.ema_fast[i]
-        s = data.ema_slow[i]
-        if f is None or s is None:
+        if f is None:
             return False
 
         open_ = candles[i][1]
         close = candles[i][4]
 
-        # Pullback: fecha abaixo da rápida, mas abre acima da lenta.
-        if not (close < f and open_ > s):
-            return False
-
-        timeframe = self._timeframes.get("signal", "signal")
-
-        # (1) Veio de cima pelo próprio candle.
-        if open_ > f:
-            self._log.log("TRIGGER", f"timeframe {timeframe} Gatilho de compra armado.")
-            return True
-
-        # (2) Senão, olha o candle anterior.
-        prev_f = data.ema_fast[i - 1]
-        prev_open = candles[i - 1][1]
-        if prev_f is not None and prev_open > prev_f:
-            self._log.log("TRIGGER", f"timeframe {timeframe} Gatilho de compra armado.")
-            return True
+        # 1. O preço tocou ou fechou abaixo da média rápida?
+        if close <= f:
+            # 2. O preço veio de cima?
+            if open_ > close:
+                timeframe = self._timeframes.get("signal", "signal")
+                self._log.log("TRIGGER", f"timeframe {timeframe} Gatilho de compra armado.")
+                return True
 
         return False
 
