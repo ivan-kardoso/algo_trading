@@ -137,7 +137,7 @@ class TripleEmaStrategy(IStrategyPort):
     def _check_buy_trigger(self, data: IndicatorData) -> bool:
         candles = data.candles
         i = len(candles) - 1
-        if i < 0:
+        if i < 1:
             return False
 
         f = data.ema_fast[i]
@@ -170,7 +170,7 @@ class TripleEmaStrategy(IStrategyPort):
     def _check_sell_trigger(self, data: IndicatorData) -> bool:
         candles = data.candles
         i = len(candles) - 1
-        if i < 0:
+        if i < 1:
             return False
 
         f = data.ema_fast[i]
@@ -188,7 +188,7 @@ class TripleEmaStrategy(IStrategyPort):
 
             # 2. O preço veio de baixo (candle atual / fechado)?
             if open_ < close:
-                self._log.log("TRIGGER", f"timeframe {timeframe} gatilho de compra armado.")
+                self._log.log("TRIGGER", f"timeframe {timeframe} gatilho de venda armado.")
                 return True
 
             # 3. Senão, o preço veio de baixo no candle anterior?
