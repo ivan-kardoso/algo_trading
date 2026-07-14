@@ -195,10 +195,53 @@ class TripleEmaStrategy(IStrategyPort):
             prev_f = data.ema_fast[i - 1]
             prev_open = candles[i - 1][1]
             if prev_f is not None and prev_open < prev_f:
-                self._log.log("TRIGGER", f"timeframe {timeframe} gatilho de venda armado")
+                self._log.log("TRIGGER", f"timeframe {timeframe} gatilho de venda armado.")
                 return True
 
         return False
+
+    def _check_armed_signal(self, data: IndicatorData, side: Literal["buy", "sell"]) -> Literal["buy", "sell"] | None:
+        candles = data.candles
+        i = len(candles) - 1
+        if i < 0:
+            return None
+
+        f = data.ema_fast[i]
+        s = data.ema_slow[i]
+        if f is None or s is None:
+            return None
+
+        close = candles[i][4]
+        timeframe = self._timeframes.get("signal", "signal")
+
+        if side == "buy":
+            # Desarme: fechou contra a lenta (abaixo).
+            if close < s:
+                self._armed = None
+                self._log.log("TRIGGER", f"timeframe {timeframe} gatilho de compra desarmado.")
+                return None
+
+            # Disparo: fechou a favor da rápida (acima).
+            if close > f:
+                self._armed = None
+                self._log.log("TRIGGER", f"timeframe {timeframe} SINAL DE COMPRA.")
+                return "buy"
+
+        else:
+            # Desarme: fechou contra a lenta (acima).
+            if close > s:
+                self._armed = None
+                self._log.log("TRIGGER", f"timeframe {timeframe} gatilho de venda desarmado.")
+                return None
+
+            # Disparo: fechou a favor da rápida (abaixo).
+            if close < f:
+                self._armed = None
+                self._log.log("TRIGGER", f"timeframe {timeframe} SINAL DE VENDA.")
+                return "sell"
+
+        # Nada: segue armado.
+        return None
 
     def check_signal(self, indicators: dict[str, IndicatorData]) -> Literal["buy", "sell"] | None:
         trend_side = self._is_trend_aligned(indicators)
@@ -211,11 +254,16 @@ class TripleEmaStrategy(IStrategyPort):
 
         signal_side = self._is_signal_aligned(indicators)
         if signal_side != trend_side:
+            self._armed = None
             return None
 
         signal_data = indicators.get("signal")
         if signal_data is None:
             return None
+
+        # Se já há gatilho armado, gerencia (desarma ou dispara).
+        if self._armed is not None:
+            return self._check_armed_signal(signal_data, self._armed)
 
         # Cenário alinhado: trend e signal no mesmo lado (trend_side).
         # Tenta armar o gatilho.
