@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from typing import TYPE_CHECKING
 
 import ccxt.async_support as ccxt
@@ -41,6 +42,15 @@ class OHLCVSource(IMarketDataSource):
                 since=since,
                 limit=limit,
             )
-            return candles or []
+            if not candles:
+                return []
+
+            # Descarta o último candle: ainda em formação na exchange.
+            now_ms = int(time.time() * 1000)
+            last_open = int(candles[-1][0])
+            if now_ms < last_open + self._timeframe_ms:
+                candles = candles[:-1]
+
+            return candles
         except Exception as exc:
             raise translate_ccxt_error(exc) from exc
