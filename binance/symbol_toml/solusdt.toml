@@ -11,7 +11,7 @@ since = ""
 candle_limit = 150
 
 [orders]
-margin_usdt = 1.0
+margin_usdt = 1.5
 order_type = "limit"
 chase_percent = 0.10
 offset_percent = 0.02
