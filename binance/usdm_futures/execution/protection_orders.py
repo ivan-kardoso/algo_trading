@@ -26,6 +26,7 @@ class ProtectionOrders(IProtectionOrders):
         utils: OrderUtils,
         percent_sl: float,
         percent_tp: float,
+        leverage: int,
         sl_confirm_attempts: int,
         sl_confirm_delay: float,
         log: Logger,
@@ -35,6 +36,7 @@ class ProtectionOrders(IProtectionOrders):
         self._utils = utils
         self._percent_sl = percent_sl
         self._percent_tp = percent_tp
+        self._leverage = leverage
         self._sl_confirm_attempts = sl_confirm_attempts
         self._sl_confirm_delay = sl_confirm_delay
         self._log = log
@@ -49,7 +51,7 @@ class ProtectionOrders(IProtectionOrders):
         amount: float,
     ) -> dict[str, Any] | None:
         protection_price = self._utils.calculate_protection_price(
-            side, entry_price, percent, is_stop_loss
+            side, entry_price, percent, is_stop_loss, self._leverage
         )
         order_name = "Stop Loss" if is_stop_loss else "Take Profit"
         opposite_side = (

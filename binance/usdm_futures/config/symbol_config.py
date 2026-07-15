@@ -58,7 +58,7 @@ class DataConfig(BaseModel):
 class OrderConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    amount: float = Field(gt=0)
+    margin_usdt: float = Field(gt=0)
     order_type: Literal["market", "limit"]
     chase_percent: float = Field(gt=0)
     offset_percent: float = Field(gt=0)

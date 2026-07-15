@@ -23,6 +23,23 @@ class OrderUtils:
         precision = self._exchange.amount_to_precision(self._symbol, amount)
         return precision if precision is not None else str(Decimal(str(amount)))
 
+    def calculate_quantity_from_margin(
+        self, margin_usdt: float, leverage: int, price: float
+    ) -> float:
+        if price <= 0:
+            raise ValueError(f"price deve ser positivo, recebido: {price}")
+        return (margin_usdt * leverage) / price
+
+    def get_min_amount(self) -> float | None:
+        market = self._exchange.market(self._symbol)
+        limits = (market or {}).get("limits", {}) or {}
+        return (limits.get("amount") or {}).get("min")
+
+    def get_min_notional(self) -> float | None:
+        market = self._exchange.market(self._symbol)
+        limits = (market or {}).get("limits", {}) or {}
+        return (limits.get("cost") or {}).get("min")
+
     def calculate_entry_price(
         self, side: str, current_price: float, offset_percent: float
     ) -> str:
@@ -41,7 +58,12 @@ class OrderUtils:
         return precision if precision is not None else str(result)
 
     def calculate_protection_price(
-        self, side: str, entry_price: float, percent: float, is_stop_loss: bool
+        self,
+        side: str,
+        entry_price: float,
+        percent: float,
+        is_stop_loss: bool,
+        leverage: int,
     ) -> str:
         if entry_price <= 0:
             raise ValueError(f"entry_price deve ser positivo, recebido: {entry_price}")
@@ -50,7 +72,7 @@ class OrderUtils:
         should_subtract = (is_long and is_stop_loss) or (not is_long and not is_stop_loss)
 
         price = Decimal(str(entry_price))
-        pct = Decimal(str(percent)) / 100
+        pct = (Decimal(str(percent)) / 100) / Decimal(str(leverage))
 
         result = price * (1 - pct) if should_subtract else price * (1 + pct)
 

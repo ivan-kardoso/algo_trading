@@ -20,7 +20,8 @@ class OrderExecutor(IOrderExecutor):
         symbol: str,
         utils: OrderUtils,
         protection_orders: IProtectionOrders,
-        amount: float,
+        margin_usdt: float,
+        leverage: int,
         order_type: str,
         chase_percent: float,
         offset_percent: float,
@@ -33,7 +34,8 @@ class OrderExecutor(IOrderExecutor):
         self._symbol = symbol
         self._utils = utils
         self._protection_orders = protection_orders
-        self._amount = amount
+        self._margin_usdt = margin_usdt
+        self._leverage = leverage
         self._order_type = order_type
         self._chase_percent = chase_percent
         self._offset_percent = offset_percent
@@ -324,7 +326,31 @@ class OrderExecutor(IOrderExecutor):
             "tp_order": None,
         }
 
-        order_result = await self._send_order(side, self._amount)
+        current_price = await self._get_current_price()
+        if not current_price or current_price <= 0:
+            self._log.error(
+                f"[{self._symbol}] Preço indisponível para calcular quantidade. Abortando ordem."
+            )
+            return result
+
+        quantity = self._utils.calculate_quantity_from_margin(
+            self._margin_usdt, self._leverage, current_price
+        )
+
+        min_amount = self._utils.get_min_amount()
+        min_notional = self._utils.get_min_notional()
+        notional = quantity * current_price
+        if (min_amount is not None and quantity < min_amount) or (
+            min_notional is not None and notional < min_notional
+        ):
+            self._log.error(
+                f"[{self._symbol}] Quantidade calculada ({quantity}) abaixo do mínimo "
+                f"permitido pela exchange (min_amount={min_amount}, min_notional={min_notional}). "
+                f"Ordem não enviada."
+            )
+            return result
+
+        order_result = await self._send_order(side, quantity)
 
         if not order_result or not order_result.get("id"):
             self._log.warning(
@@ -407,7 +433,7 @@ class OrderExecutor(IOrderExecutor):
             )
             return result
 
-        amount_for_protection = filled_qty if filled_qty > 0 else self._amount
+        amount_for_protection = filled_qty if filled_qty > 0 else quantity
 
         # Cria SL com confirmação via recreate_missing (has_tp=True = não toca TP ainda).
         # recreate_missing cria + confirma internamente via endpoint algo.

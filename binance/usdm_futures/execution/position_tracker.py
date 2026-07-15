@@ -21,7 +21,7 @@ class PositionTracker(IPositionTracker):
         utils: OrderUtils,
         protection_orders: IProtectionOrders,
         leverage: int,
-        amount: float,
+        margin_usdt: float,
         fetch_positions_timeout: float,
         normalize_max_attempts: int,
         normalize_retry_delay: float,
@@ -32,7 +32,7 @@ class PositionTracker(IPositionTracker):
         self._utils = utils
         self._protection_orders = protection_orders
         self._leverage = leverage
-        self._amount = amount
+        self._margin_usdt = margin_usdt
         self._fetch_positions_timeout = fetch_positions_timeout
         self._normalize_max_attempts = normalize_max_attempts
         self._normalize_retry_delay = normalize_retry_delay
@@ -316,7 +316,11 @@ class PositionTracker(IPositionTracker):
             return False
 
         position_size = self._utils.extract_size(active_position)
-        amount_for_protection = position_size if position_size > 0 else self._amount
+        amount_for_protection = position_size if position_size > 0 else (
+            self._utils.calculate_quantity_from_margin(
+                self._margin_usdt, self._leverage, entry_price
+            )
+        )
 
         for attempt in range(1, self._normalize_max_attempts + 1):
             try:
