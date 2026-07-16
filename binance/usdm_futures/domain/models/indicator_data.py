@@ -14,7 +14,7 @@ class IndicatorData:
     ema_slow: list[float | None]
 
 
-@dataclass
+@dataclass(frozen=True)
 class MACDResult:
     macd: list[Optional[float | None]]
     signal: list[Optional[float | None]]
