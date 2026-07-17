@@ -3,15 +3,15 @@ strategy = "triple-ema"
 sandbox = true
 
 [data]
-signal_timeframe = "1m"
-trend_timeframe = "3m"
-aux_timeframe_1 = ""
+signal_timeframe = "15m"
+trend_timeframe = "1d"
+aux_timeframe_1 = "1h"
 aux_timeframe_2 = ""
 since = ""
 candle_limit = 150
 
 [orders]
-amount = 0.01
+margin_usdt = 12
 order_type = "limit"
 chase_percent = 0.10
 offset_percent = 0.02
