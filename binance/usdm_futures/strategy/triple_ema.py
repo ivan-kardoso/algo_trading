@@ -55,8 +55,39 @@ class TripleEmaStrategy(IStrategyPort):
             )
         return result
 
-    def check_alignment(self, f: float, m: float, s: float) -> Literal["buy", "sell"] | None:
+    def _check_alignment(self, f: float, m: float, s: float) -> Literal["buy", "sell"] | None:
         return "buy" if f > m > s else "sell" if f < m < s else None
 
-    def is_aligned(self, indicators: dict[str, IndicatorData], role: Role) -> Literal["buy", "sell"] | None:
-        trend = indicators.get("trend")
+    def _is_aligned(
+        self, indicators: dict[str, IndicatorData], role: Role
+    ) -> Literal["buy", "sell"] | None:
+        trend = indicators.get(role)
+        if trend is None:
+            return None
+
+        i = len(trend.candles) - 1
+        if i < 0:
+            return None
+
+        f = trend.ema_fast[i]
+        m = trend.ema_medium[i]
+        s = trend.ema_slow[i]
+
+        if f is None or m is None or s is None:
+            return None
+
+        timeframe = self._timeframes.get(role, role)
+        alignment = self._check_alignment(f, m, s)
+
+        if alignment == "buy":
+            self._log.log("ALIGN", f"Timeframe {timeframe} - Triple EMA alinhada para compra.")
+        elif alignment == "sell":
+            self._log.log("ALIGN", f"Timeframe {timeframe} - Triple EMA alinhada para venda.")
+        else:
+            self._log.log("ALIGN", f"Timeframe {timeframe} - Triple EMA sem alinhamento.")
+
+        return alignment
+
+    def check_signal(self, indicators: dict[str, IndicatorData]) -> Literal["buy", "sell"] | None:
+        trend_side = self._is_aligned(indicators, Role.TREND)
+        return None
