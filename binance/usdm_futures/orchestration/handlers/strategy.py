@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Mapping
 
 from ...domain.models.indicator_data import IndicatorData
-from ...domain.models.role import Role
+from ...domain.models.timeframe_slot import TimeframeSlot
 from ...domain.ports import IMarketDataRepository, IStrategyPort
 from ...domain.state_machine.transitions import (
     ApplyStrategyEvent,
@@ -18,18 +18,18 @@ if TYPE_CHECKING:
 
 def handle_apply_strategy(
     strategy: IStrategyPort,
-    repos: Mapping[Role, IMarketDataRepository],
+    repos: Mapping[TimeframeSlot, IMarketDataRepository],
     symbol: str,
     log: Logger,
-) -> tuple[ApplyStrategyEvent, dict[Role, IndicatorData] | None]:
+) -> tuple[ApplyStrategyEvent, dict[TimeframeSlot, IndicatorData] | None]:
     """Aplica indicadores aos datasets dos timeframes preenchidos.
 
     Retorna (event, indicadores_processados). Os indicadores processados
     são passados adiante ao handle_check_signal pelo runner; nunca
-    persistem em disco. Mapeados por papel (signal/trend/aux_1/aux_2),
+    persistem em disco. Mapeados por posição (timeframe_1..timeframe_4),
     contendo apenas os timeframes efetivamente preenchidos.
     """
-    datasets = {role: repo.get_dataset() for role, repo in repos.items()}
+    datasets = {slot: repo.get_dataset() for slot, repo in repos.items()}
     if any(not data for data in datasets.values()):
         log.info(f"[{symbol}] Dataset vazio. Aguardando próximo candle.")
         return ApplyStrategyEvent.EMPTY, None
@@ -41,7 +41,7 @@ def handle_apply_strategy(
 
 def handle_check_signal(
     strategy: IStrategyPort,
-    processed: dict[Role, IndicatorData] | None,
+    processed: dict[TimeframeSlot, IndicatorData] | None,
     symbol: str,
     log: Logger,
 ) -> CheckSignalEvent:

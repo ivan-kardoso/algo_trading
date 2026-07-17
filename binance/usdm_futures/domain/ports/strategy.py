@@ -7,16 +7,21 @@ from . import OHLCVData
 
 if TYPE_CHECKING:
     from ..models.indicator_data import IndicatorData
-    from ..models.role import Role
+    from ..models.timeframe_slot import TimeframeSlot
 
 
 class IStrategyPort(ABC):
     @abstractmethod
     def apply_indicators(
-        self, datasets: dict[Role, OHLCVData]
-    ) -> dict[Role, IndicatorData]: ...
+        self, datasets: dict[TimeframeSlot, OHLCVData]
+    ) -> dict[TimeframeSlot, IndicatorData]: ...
 
     @abstractmethod
     def check_signal(
-        self, indicators: dict[Role, IndicatorData]
+        self, indicators: dict[TimeframeSlot, IndicatorData]
     ) -> Literal["buy", "sell"] | None: ...
+
+    @abstractmethod
+    def rhythm_slot(self) -> TimeframeSlot:
+        """Posição de timeframe que dita o ritmo do loop (informada pela estratégia)."""
+        ...

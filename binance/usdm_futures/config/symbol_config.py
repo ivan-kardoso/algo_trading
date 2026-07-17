@@ -9,21 +9,28 @@ from ..domain.models.strategy_names import VALID_STRATEGIES
 from ..domain.models.timeframes import VALID_TIMEFRAMES
 
 
-class DataConfig(BaseModel):
+class MarketDataConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    signal_timeframe: str
-    trend_timeframe: str | None = None
-    aux_timeframe_1: str | None = None
-    aux_timeframe_2: str | None = None
+    timeframe_1: str
+    timeframe_2: str | None = None
+    timeframe_3: str | None = None
+    timeframe_4: str | None = None
     since: str | None = None
     candle_limit: int | None = None
 
-    @field_validator(
-        "signal_timeframe", "trend_timeframe", "aux_timeframe_1", "aux_timeframe_2"
-    )
+    @field_validator("timeframe_1")
     @classmethod
-    def validate_timeframe(cls, v: str | None) -> str | None:
+    def validate_timeframe_1(cls, v: str) -> str:
+        if v not in VALID_TIMEFRAMES:
+            raise ValueError(
+                f"Timeframe inválido: '{v}'. Valores aceitos: {sorted(VALID_TIMEFRAMES)}"
+            )
+        return v
+
+    @field_validator("timeframe_2", "timeframe_3", "timeframe_4")
+    @classmethod
+    def validate_optional_timeframe(cls, v: str | None) -> str | None:
         if v is None or v.strip() == "":
             return None
         if v not in VALID_TIMEFRAMES:
@@ -83,7 +90,7 @@ class AssetSettings(BaseModel):
     symbol: str
     strategy: str
     sandbox: bool = True
-    data: DataConfig
+    market_data: MarketDataConfig
     orders: OrderConfig
     risk: RiskConfig
 

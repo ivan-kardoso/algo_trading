@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-from ...domain.models.role import Role
+from ...domain.models.timeframe_slot import TimeframeSlot
 from ...domain.ports import IMarketDataRepository
 from ...domain.state_machine.transitions import FetchDataEvent, RunContext
 
@@ -30,18 +30,19 @@ def _candle_closed(repo: IMarketDataRepository) -> bool:
 
 async def handle_fetch_data(
     ctx: RunContext,
-    signal_repo: IMarketDataRepository,
-    other_repos: dict[Role, IMarketDataRepository],
-    timeframes: dict[Role, str],
+    rhythm_repo: IMarketDataRepository,
+    rhythm_slot: TimeframeSlot,
+    other_repos: dict[TimeframeSlot, IMarketDataRepository],
+    timeframes: dict[TimeframeSlot, str],
     symbol: str,
     log: Logger,
 ) -> FetchDataEvent:
     """Atualiza os datasets OHLCV em memória via repositories.
 
-    O dataset de signal é atualizado sempre. Cada dataset em `other_repos`
-    (trend/aux_1/aux_2, apenas os preenchidos) só é atualizado quando um
-    candle novo daquele timeframe fechou desde a última atualização (ou no
-    download inicial).
+    O dataset da posição de ritmo (informada pela estratégia) é atualizado
+    sempre. Cada dataset em `other_repos` (as demais posições preenchidas)
+    só é atualizado quando um candle novo daquele timeframe fechou desde a
+    última atualização (ou no download inicial).
     """
     if not ctx.has_exchange:
         log.error(f"[{symbol}] Conexão com exchange ausente. ERROR STATE.")
@@ -50,13 +51,13 @@ async def handle_fetch_data(
     try:
         updated: list[str] = []
 
-        await signal_repo.update()
-        updated.append(f"{timeframes[Role.SIGNAL]} ({signal_repo.candle_count()})")
+        await rhythm_repo.update()
+        updated.append(f"{timeframes[rhythm_slot]} ({rhythm_repo.candle_count()})")
 
-        for role, repo in other_repos.items():
+        for slot, repo in other_repos.items():
             if _candle_closed(repo):
                 await repo.update()
-                updated.append(f"{timeframes[role]} ({repo.candle_count()})")
+                updated.append(f"{timeframes[slot]} ({repo.candle_count()})")
 
         log.log("DATASET", f"[{symbol}] Datasets atualizados: {' | '.join(updated)}")
 

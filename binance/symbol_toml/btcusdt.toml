@@ -2,11 +2,11 @@ symbol = "BTC/USDT:USDT"
 strategy = "triple-ema"
 sandbox = true
 
-[data]
-signal_timeframe = "15m"
-trend_timeframe = "1d"
-aux_timeframe_1 = "1h"
-aux_timeframe_2 = ""
+[market_data]
+timeframe_1 = "1d"
+timeframe_2 = "1h"
+timeframe_3 = "15m"
+timeframe_4 = ""
 since = ""
 candle_limit = 150
 

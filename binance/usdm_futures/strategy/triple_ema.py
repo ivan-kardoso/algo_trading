@@ -59,19 +59,19 @@ class TripleEmaStrategy(IStrategyPort):
         return "buy" if f > m > s else "sell" if f < m < s else None
 
     def _is_aligned(
-        self, indicators: dict[str, IndicatorData], role: Role
+        self, indicators: dict[Role, IndicatorData], role: Role
     ) -> Literal["buy", "sell"] | None:
-        trend = indicators.get(role)
-        if trend is None:
+        data = indicators.get(role)
+        if data is None:
             return None
 
-        i = len(trend.candles) - 1
+        i = len(data.candles) - 1
         if i < 0:
             return None
 
-        f = trend.ema_fast[i]
-        m = trend.ema_medium[i]
-        s = trend.ema_slow[i]
+        f = data.ema_fast[i]
+        m = data.ema_medium[i]
+        s = data.ema_slow[i]
 
         if f is None or m is None or s is None:
             return None
@@ -88,6 +88,8 @@ class TripleEmaStrategy(IStrategyPort):
 
         return alignment
 
-    def check_signal(self, indicators: dict[str, IndicatorData]) -> Literal["buy", "sell"] | None:
-        trend_side = self._is_aligned(indicators, Role.TREND)
+    def check_signal(self, indicators: dict[Role, IndicatorData]) -> Literal["buy", "sell"] | None:
+        self._is_aligned(indicators, Role.TREND)
+        self._is_aligned(indicators, Role.SIGNAL)
+        self._is_aligned(indicators, Role.AUX_1)
         return None

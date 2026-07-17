@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from ..config.schedule import SystemSettings
 from ..domain.models.indicator_data import IndicatorData
-from ..domain.models.role import Role
+from ..domain.models.timeframe_slot import TimeframeSlot
 from ..domain.ports import (
     IMarketDataRepository,
     IOrderExecutor,
@@ -73,8 +73,8 @@ class SymbolRunner:
         exchange_client: ExchangeClient,
         position_tracker: IPositionTracker,
         order_executor: IOrderExecutor,
-        repos: Mapping[Role, IMarketDataRepository],
-        timeframes: Mapping[Role, str],
+        repos: Mapping[TimeframeSlot, IMarketDataRepository],
+        timeframes: Mapping[TimeframeSlot, str],
         strategy: IStrategyPort,
         log: Logger,
     ) -> None:
@@ -87,16 +87,17 @@ class SymbolRunner:
         self._tracker = position_tracker
         self._executor = order_executor
         self._repos = repos
-        self._signal_repo = repos[Role.SIGNAL]
+        self._rhythm_slot = strategy.rhythm_slot()
+        self._rhythm_repo = repos[self._rhythm_slot]
         self._other_repos = {
-            role: repo for role, repo in repos.items() if role != Role.SIGNAL
+            slot: repo for slot, repo in repos.items() if slot != self._rhythm_slot
         }
         self._timeframes = timeframes
         self._strategy = strategy
         self._log = log
 
         # Estado entre estados (não faz parte do RunContext pois é volátil)
-        self._processed: dict[Role, IndicatorData] | None = None
+        self._processed: dict[TimeframeSlot, IndicatorData] | None = None
         self._monitoring_started_at: datetime | None = None
 
     async def run(self) -> None:
@@ -181,7 +182,8 @@ class SymbolRunner:
     async def _step_fetch_data(self) -> None:
         event = await handle_fetch_data(
             self._ctx,
-            self._signal_repo,
+            self._rhythm_repo,
+            self._rhythm_slot,
             self._other_repos,
             self._timeframes,
             self._symbol,
@@ -258,7 +260,7 @@ class SymbolRunner:
         await handle_standby(
             self._ctx,
             self._hours,
-            self._signal_repo,
+            self._rhythm_repo,
             self._sys.fetch.candle_fetch_delay_seconds,
             self._log,
         )

@@ -8,8 +8,8 @@ from pathlib import Path
 from ..config.schedule import SystemSettings
 from ..config.secrets import Secrets
 from ..config.strategy_config import load_strategy_settings
-from ..config.symbol_config import AssetSettings, DataConfig, load_asset_settings
-from ..domain.models.role import Role
+from ..config.symbol_config import AssetSettings, MarketDataConfig, load_asset_settings
+from ..domain.models.timeframe_slot import TimeframeSlot
 from ..domain.state_machine.transitions import RunContext
 from ..execution.order_executor import OrderExecutor
 from ..execution.order_utils import OrderUtils
@@ -25,17 +25,7 @@ from ..shared.market_hours import MarketHoursChecker
 from ..strategy import NullStrategy, TripleEmaStrategy
 
 
-# Papel → nome do campo em DataConfig. "signal" é sempre preenchido; os
-# demais são opcionais e só geram source/repo quando presentes no TOML.
-_ROLE_TIMEFRAME_FIELDS: dict[Role, str] = {
-    Role.SIGNAL: "signal_timeframe",
-    Role.TREND: "trend_timeframe",
-    Role.AUX_1: "aux_timeframe_1",
-    Role.AUX_2: "aux_timeframe_2",
-}
-
-
-def _resolve_candle_limit(data: DataConfig, timeframe_ms: int) -> int:
+def _resolve_candle_limit(data: MarketDataConfig, timeframe_ms: int) -> int:
     """Converte config de dados em quantidade de candles para o carregamento inicial."""
     if data.candle_limit is not None:
         return data.candle_limit
@@ -133,17 +123,18 @@ async def build_symbol_runner(
     )
 
     # --- Camada de dados de mercado ---
-    # Um par (source + repo) por timeframe preenchido no TOML (1 a 4:
-    # signal obrigatório; trend/aux_1/aux_2 opcionais). candle_limit/since
-    # são únicos e aplicados a todos os datasets.
+    # Um par (source + repo) por posição de timeframe preenchida no TOML
+    # (timeframe_1 obrigatório; timeframe_2/3/4 opcionais). candle_limit/since
+    # são únicos e aplicados a todos os datasets. O sistema não sabe o que
+    # cada posição significa — isso é papel da estratégia.
     fetch_cfg = sys_settings.fetch
-    repos: dict[Role, MemoryRepository] = {}
-    timeframes: dict[Role, str] = {}
-    for role, field_name in _ROLE_TIMEFRAME_FIELDS.items():
-        timeframe = getattr(asset.data, field_name)
+    repos: dict[TimeframeSlot, MemoryRepository] = {}
+    timeframes: dict[TimeframeSlot, str] = {}
+    for slot in TimeframeSlot:
+        timeframe = getattr(asset.market_data, slot.value)
         if timeframe is None:
             continue
-        timeframes[role] = timeframe
+        timeframes[slot] = timeframe
 
         source = OHLCVSource(
             exchange=exchange,
@@ -151,8 +142,8 @@ async def build_symbol_runner(
             timeframe=timeframe,
             log=log,
         )
-        candle_limit = _resolve_candle_limit(asset.data, source.timeframe_ms)
-        repos[role] = MemoryRepository(
+        candle_limit = _resolve_candle_limit(asset.market_data, source.timeframe_ms)
+        repos[slot] = MemoryRepository(
             source=source,
             transform=OHLCVTransform(),
             candle_limit=candle_limit,
