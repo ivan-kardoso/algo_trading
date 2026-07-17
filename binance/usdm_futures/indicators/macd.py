@@ -46,7 +46,7 @@ def macd(
         raise ValueError("fast_period deve ser menor que slow_period.")
 
     if len(data) < slow_period:
-        raise ValueError(f"A quantidade da dados é insuficiente. Dados: {len(data)}, Período: {slow_period}")
+        raise ValueError(f"A quantidade de dados é insuficiente. Dados: {len(data)}, Período: {slow_period}")
 
     ema_fast = ema(data, fast_period)
     ema_slow = ema(data, slow_period)

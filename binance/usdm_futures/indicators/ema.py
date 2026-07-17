@@ -16,7 +16,7 @@ def ema(data: list[float], period: int = 9) -> list[Optional[float]]:
     if period <= 0:
         raise ValueError("O período deve ser maior que zero.")
     if len(data) < period:
-        raise ValueError("A quantidade de dados é menor que o período informado.")
+        raise ValueError(f"A quantidade de dados é insuficiente. Dados: {len(data)}, Período: {period}")
 
     k = 2 / (period + 1)  # fator de suavização
     ema_values: list[Optional[float]] = [None] * (period - 1)
