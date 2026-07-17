@@ -9,6 +9,7 @@ from ..config.schedule import SystemSettings
 from ..config.secrets import Secrets
 from ..config.strategy_config import load_strategy_settings
 from ..config.symbol_config import AssetSettings, DataConfig, load_asset_settings
+from ..domain.models.role import Role
 from ..domain.state_machine.transitions import RunContext
 from ..execution.order_executor import OrderExecutor
 from ..execution.order_utils import OrderUtils
@@ -26,11 +27,11 @@ from ..strategy import NullStrategy, TripleEmaStrategy
 
 # Papel → nome do campo em DataConfig. "signal" é sempre preenchido; os
 # demais são opcionais e só geram source/repo quando presentes no TOML.
-_ROLE_TIMEFRAME_FIELDS: dict[str, str] = {
-    "signal": "signal_timeframe",
-    "trend": "trend_timeframe",
-    "aux_1": "aux_timeframe_1",
-    "aux_2": "aux_timeframe_2",
+_ROLE_TIMEFRAME_FIELDS: dict[Role, str] = {
+    Role.SIGNAL: "signal_timeframe",
+    Role.TREND: "trend_timeframe",
+    Role.AUX_1: "aux_timeframe_1",
+    Role.AUX_2: "aux_timeframe_2",
 }
 
 
@@ -136,8 +137,8 @@ async def build_symbol_runner(
     # signal obrigatório; trend/aux_1/aux_2 opcionais). candle_limit/since
     # são únicos e aplicados a todos os datasets.
     fetch_cfg = sys_settings.fetch
-    repos: dict[str, MemoryRepository] = {}
-    timeframes: dict[str, str] = {}
+    repos: dict[Role, MemoryRepository] = {}
+    timeframes: dict[Role, str] = {}
     for role, field_name in _ROLE_TIMEFRAME_FIELDS.items():
         timeframe = getattr(asset.data, field_name)
         if timeframe is None:

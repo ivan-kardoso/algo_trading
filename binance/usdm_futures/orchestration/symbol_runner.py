@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 from ..config.schedule import SystemSettings
 from ..domain.models.indicator_data import IndicatorData
+from ..domain.models.role import Role
 from ..domain.ports import (
     IMarketDataRepository,
     IOrderExecutor,
@@ -72,8 +73,8 @@ class SymbolRunner:
         exchange_client: ExchangeClient,
         position_tracker: IPositionTracker,
         order_executor: IOrderExecutor,
-        repos: Mapping[str, IMarketDataRepository],
-        timeframes: Mapping[str, str],
+        repos: Mapping[Role, IMarketDataRepository],
+        timeframes: Mapping[Role, str],
         strategy: IStrategyPort,
         log: Logger,
     ) -> None:
@@ -86,16 +87,16 @@ class SymbolRunner:
         self._tracker = position_tracker
         self._executor = order_executor
         self._repos = repos
-        self._signal_repo = repos["signal"]
+        self._signal_repo = repos[Role.SIGNAL]
         self._other_repos = {
-            role: repo for role, repo in repos.items() if role != "signal"
+            role: repo for role, repo in repos.items() if role != Role.SIGNAL
         }
         self._timeframes = timeframes
         self._strategy = strategy
         self._log = log
 
         # Estado entre estados (não faz parte do RunContext pois é volátil)
-        self._processed: dict[str, IndicatorData] | None = None
+        self._processed: dict[Role, IndicatorData] | None = None
         self._monitoring_started_at: datetime | None = None
 
     async def run(self) -> None:

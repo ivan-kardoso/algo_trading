@@ -7,15 +7,16 @@ from . import OHLCVData
 
 if TYPE_CHECKING:
     from ..models.indicator_data import IndicatorData
+    from ..models.role import Role
 
 
 class IStrategyPort(ABC):
     @abstractmethod
     def apply_indicators(
-        self, datasets: dict[str, OHLCVData]
-    ) -> dict[str, IndicatorData]: ...
+        self, datasets: dict[Role, OHLCVData]
+    ) -> dict[Role, IndicatorData]: ...
 
     @abstractmethod
     def check_signal(
-        self, indicators: dict[str, IndicatorData]
+        self, indicators: dict[Role, IndicatorData]
     ) -> Literal["buy", "sell"] | None: ...

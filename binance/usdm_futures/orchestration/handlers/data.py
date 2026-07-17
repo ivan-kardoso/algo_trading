@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
+from ...domain.models.role import Role
 from ...domain.ports import IMarketDataRepository
 from ...domain.state_machine.transitions import FetchDataEvent, RunContext
 
@@ -30,8 +31,8 @@ def _candle_closed(repo: IMarketDataRepository) -> bool:
 async def handle_fetch_data(
     ctx: RunContext,
     signal_repo: IMarketDataRepository,
-    other_repos: dict[str, IMarketDataRepository],
-    timeframes: dict[str, str],
+    other_repos: dict[Role, IMarketDataRepository],
+    timeframes: dict[Role, str],
     symbol: str,
     log: Logger,
 ) -> FetchDataEvent:
@@ -50,7 +51,7 @@ async def handle_fetch_data(
         updated: list[str] = []
 
         await signal_repo.update()
-        updated.append(f"{timeframes['signal']} ({signal_repo.candle_count()})")
+        updated.append(f"{timeframes[Role.SIGNAL]} ({signal_repo.candle_count()})")
 
         for role, repo in other_repos.items():
             if _candle_closed(repo):

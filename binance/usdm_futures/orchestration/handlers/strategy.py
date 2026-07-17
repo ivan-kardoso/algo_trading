@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Mapping
 
 from ...domain.models.indicator_data import IndicatorData
+from ...domain.models.role import Role
 from ...domain.ports import IMarketDataRepository, IStrategyPort
 from ...domain.state_machine.transitions import (
     ApplyStrategyEvent,
@@ -17,10 +18,10 @@ if TYPE_CHECKING:
 
 def handle_apply_strategy(
     strategy: IStrategyPort,
-    repos: Mapping[str, IMarketDataRepository],
+    repos: Mapping[Role, IMarketDataRepository],
     symbol: str,
     log: Logger,
-) -> tuple[ApplyStrategyEvent, dict[str, IndicatorData] | None]:
+) -> tuple[ApplyStrategyEvent, dict[Role, IndicatorData] | None]:
     """Aplica indicadores aos datasets dos timeframes preenchidos.
 
     Retorna (event, indicadores_processados). Os indicadores processados
@@ -40,7 +41,7 @@ def handle_apply_strategy(
 
 def handle_check_signal(
     strategy: IStrategyPort,
-    processed: dict[str, IndicatorData] | None,
+    processed: dict[Role, IndicatorData] | None,
     symbol: str,
     log: Logger,
 ) -> CheckSignalEvent:
