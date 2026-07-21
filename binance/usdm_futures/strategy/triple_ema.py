@@ -7,11 +7,11 @@ Multi-timeframe: recebe de 1 a 4 datasets mapeados por papel
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal
+from enum import Enum
 
 from ..config.strategy_config import StrategySettings
 from ..indicators import ema
 from ..domain.models.indicator_data import IndicatorData
-from ..domain.models.role import Role
 from ..domain.ports import OHLCVData
 from ..domain.ports.strategy import IStrategyPort
 
@@ -25,6 +25,13 @@ _FIELD_INDEX: dict[str, int] = {
     "close": 4,
     "volume": 5,
 }
+
+
+class Role(str, Enum):
+    SIGNAL = "signal"
+    TREND = "trend"
+    AUX_1 = "aux_1"
+    AUX_2 = "aux_2"
 
 
 class TripleEmaStrategy(IStrategyPort):
