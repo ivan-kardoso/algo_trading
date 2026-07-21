@@ -65,17 +65,26 @@ class MarketDataConfig(BaseModel):
         return self
 
 
-class StrategySettings(BaseModel):
+class EmasConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    name: str
     field: str
-
     fast_period: int = Field(gt=0)
     medium_period: int = Field(gt=0)
     slow_period: int = Field(gt=0)
 
-    market_data: MarketDataConfig
+    @field_validator("field")
+    @classmethod
+    def validate_ohlcv_field(cls, v: str) -> str:
+        if v not in VALID_OHLCV_FIELDS:
+            raise ValueError(
+                f"Campo inválido: '{v}'. Field válido para cálculo: 'open', 'high', 'low', 'close', 'volume'"
+            )
+        return v
+
+
+class RolesConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
 
     # Mapeamento papel da estratégia -> posição de timeframe do símbolo.
     # "signal" e "trend" são obrigatórios para a triple-ema; aux_1/aux_2 são
@@ -87,24 +96,6 @@ class StrategySettings(BaseModel):
 
     # Posição de timeframe que dita o ritmo do loop. Independente do signal.
     ritmo: str
-
-    @field_validator("name")
-    @classmethod
-    def validate_strategy(cls, v: str) -> str:
-        if v not in VALID_STRATEGIES:
-            raise ValueError(
-                f"Estratégia inválida: '{v}'. Estratégias válidas: {sorted(VALID_STRATEGIES)}"
-            )
-        return v
-
-    @field_validator("field")
-    @classmethod
-    def validate_ohlcv_field(cls, v: str) -> str:
-        if v not in VALID_OHLCV_FIELDS:
-            raise ValueError(
-                f"Campo inválido: '{v}'. Field válido para cálculo: 'open', 'high', 'low', 'close', 'volume'"
-            )
-        return v
 
     @field_validator("signal", "trend", "aux_1", "aux_2")
     @classmethod
@@ -130,6 +121,24 @@ class StrategySettings(BaseModel):
         """Mapeamento papel -> posição, apenas para os papéis preenchidos."""
         roles = {"signal": self.signal, "trend": self.trend, "aux_1": self.aux_1, "aux_2": self.aux_2}
         return {role: position for role, position in roles.items() if position is not None}
+
+
+class StrategySettings(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    emas: EmasConfig
+    roles: RolesConfig
+    market_data: MarketDataConfig
+
+    @field_validator("name")
+    @classmethod
+    def validate_strategy(cls, v: str) -> str:
+        if v not in VALID_STRATEGIES:
+            raise ValueError(
+                f"Estratégia inválida: '{v}'. Estratégias válidas: {sorted(VALID_STRATEGIES)}"
+            )
+        return v
 
 
 def load_strategy_settings(filepath: str) -> StrategySettings:
