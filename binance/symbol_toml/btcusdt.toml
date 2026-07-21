@@ -2,14 +2,6 @@ symbol = "BTC/USDT:USDT"
 strategy = "triple-ema"
 sandbox = true
 
-[market_data]
-timeframe_1 = "1d"
-timeframe_2 = "1h"
-timeframe_3 = "15m"
-timeframe_4 = ""
-since = ""
-candle_limit = 150
-
 [orders]
 margin_usdt = 12
 order_type = "limit"

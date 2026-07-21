@@ -9,3 +9,11 @@ trend = "timeframe_1"
 aux_1 = "timeframe_2"
 
 ritmo = "timeframe_3"
+
+[market_data]
+timeframe_1 = "1d"
+timeframe_2 = "1h"
+timeframe_3 = "15m"
+timeframe_4 = ""
+since = ""
+candle_limit = 150

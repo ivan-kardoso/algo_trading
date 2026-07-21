@@ -1,65 +1,10 @@
 import tomllib
-from datetime import datetime
 from pathlib import Path
-from typing import ClassVar, Literal, Self
+from typing import ClassVar, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from ..domain.models.strategy_names import VALID_STRATEGIES
-from ..domain.models.timeframes import VALID_TIMEFRAMES
-
-
-class MarketDataConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    timeframe_1: str
-    timeframe_2: str | None = None
-    timeframe_3: str | None = None
-    timeframe_4: str | None = None
-    since: str | None = None
-    candle_limit: int | None = None
-
-    @field_validator("timeframe_1")
-    @classmethod
-    def validate_timeframe_1(cls, v: str) -> str:
-        if v not in VALID_TIMEFRAMES:
-            raise ValueError(
-                f"Timeframe inválido: '{v}'. Valores aceitos: {sorted(VALID_TIMEFRAMES)}"
-            )
-        return v
-
-    @field_validator("timeframe_2", "timeframe_3", "timeframe_4")
-    @classmethod
-    def validate_optional_timeframe(cls, v: str | None) -> str | None:
-        if v is None or v.strip() == "":
-            return None
-        if v not in VALID_TIMEFRAMES:
-            raise ValueError(
-                f"Timeframe inválido: '{v}'. Valores aceitos: {sorted(VALID_TIMEFRAMES)}"
-            )
-        return v
-
-    @field_validator("since")
-    @classmethod
-    def validate_since_format(cls, v: str) -> str:
-        if not v:
-            return v
-        try:
-            datetime.strptime(v, "%d/%m/%Y")
-            return v
-        except Exception as e:
-            raise ValueError(
-                f"Since não possui o formato correto '{v}'. Deve ser (dia/mês/ano)."
-            ) from e
-
-    @model_validator(mode="after")
-    def validate_since_and_candle_limit(self) -> Self:
-        if not self.since and not self.candle_limit:
-            raise ValueError(
-                f"Since: {self.since} e Candle Limit: {self.candle_limit} estão vazios.\n"
-                f"Ao menos um dos dois deve ter um valor válido."
-            )
-        return self
 
 
 class OrderConfig(BaseModel):
@@ -90,7 +35,6 @@ class AssetSettings(BaseModel):
     symbol: str
     strategy: str
     sandbox: bool = True
-    market_data: MarketDataConfig
     orders: OrderConfig
     risk: RiskConfig
 

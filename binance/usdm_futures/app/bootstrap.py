@@ -7,8 +7,8 @@ from pathlib import Path
 
 from ..config.schedule import SystemSettings
 from ..config.secrets import Secrets
-from ..config.strategy_config import load_strategy_settings
-from ..config.symbol_config import AssetSettings, MarketDataConfig, load_asset_settings
+from ..config.strategy_config import MarketDataConfig, load_strategy_settings
+from ..config.symbol_config import AssetSettings, load_asset_settings
 from ..domain.models.timeframe_slot import TimeframeSlot
 from ..domain.state_machine.transitions import RunContext
 from ..execution.order_executor import OrderExecutor
@@ -131,7 +131,7 @@ async def build_symbol_runner(
     repos: dict[TimeframeSlot, MemoryRepository] = {}
     timeframes: dict[TimeframeSlot, str] = {}
     for slot in TimeframeSlot:
-        timeframe = getattr(asset.market_data, slot.value)
+        timeframe = getattr(strategy_settings.market_data, slot.value)
         if timeframe is None:
             continue
         timeframes[slot] = timeframe
@@ -142,7 +142,7 @@ async def build_symbol_runner(
             timeframe=timeframe,
             log=log,
         )
-        candle_limit = _resolve_candle_limit(asset.market_data, source.timeframe_ms)
+        candle_limit = _resolve_candle_limit(strategy_settings.market_data, source.timeframe_ms)
         repos[slot] = MemoryRepository(
             source=source,
             transform=OHLCVTransform(),
