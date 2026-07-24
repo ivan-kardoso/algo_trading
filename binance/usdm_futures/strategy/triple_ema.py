@@ -27,13 +27,6 @@ _FIELD_INDEX: dict[str, int] = {
 }
 
 
-class Role(str, Enum):
-    SIGNAL = "signal"
-    TREND = "trend"
-    AUX_1 = "aux_1"
-    AUX_2 = "aux_2"
-
-
 class TripleEmaStrategy(IStrategyPort):
     def __init__(
         self,
@@ -44,7 +37,7 @@ class TripleEmaStrategy(IStrategyPort):
         self._settings = settings
         self._timeframes = timeframes
         self._log = log
-        self._field_index = _FIELD_INDEX[settings.field]
+        self._field_index = _FIELD_INDEX[settings.emas.field]
         self._trend_lock_pending: bool = True
         self._trend_blocked: Literal["buy", "sell"] | None = None
         self._trend_released: bool = False
@@ -56,9 +49,9 @@ class TripleEmaStrategy(IStrategyPort):
             series = [row[self._field_index] for row in data]
             result[role] = IndicatorData(
                 candles=data,
-                ema_fast=ema(series, self._settings.fast_period),
-                ema_medium=ema(series, self._settings.medium_period),
-                ema_slow=ema(series, self._settings.slow_period),
+                ema_fast=ema(series, self._settings.emas.fast_period),
+                ema_medium=ema(series, self._settings.emas.medium_period),
+                ema_slow=ema(series, self._settings.emas.slow_period),
             )
         return result
 

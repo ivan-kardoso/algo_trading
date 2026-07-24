@@ -6,12 +6,6 @@ fast_period = 13
 medium_period = 26
 slow_period = 52
 
-[roles]
-signal = "timeframe_3"
-trend = "timeframe_1"
-aux_1 = "timeframe_2"
-ritmo = "timeframe_3"
-
 [market_data]
 timeframe_1 = "1d"
 timeframe_2 = "1h"
@@ -19,3 +13,10 @@ timeframe_3 = "15m"
 timeframe_4 = ""
 since = ""
 candle_limit = 150
+
+[roles]
+signal = "timeframe_3"
+trend = "timeframe_1"
+aux_1 = "timeframe_2"
+ritmo = "timeframe_3"
+
