@@ -136,16 +136,20 @@ class TripleEmaStrategy(IStrategyPort):
         self, indicators: Dict[TimeframeSlot, IndicatorData]
     ) -> Literal["buy", "sell"] | None:
         primary_trend_side = self._is_aligned(indicators, Role.PRIMARY_TREND)
-        if primary_trend_side is None:
-            return None
 
         if not self._is_primary_trend_released(primary_trend_side):
+            return None
+
+        if primary_trend_side is None:
             return None
 
         secondary_trend_side = self._is_aligned(indicators, Role.SECONDARY_TREND)
         signal_side = self._is_aligned(indicators, Role.SIGNAL)
 
-        if secondary_trend_side and signal_side != primary_trend_side:
+        if (
+            secondary_trend_side != primary_trend_side
+            or signal_side != primary_trend_side
+        ):
             self._armed = None
             return None
 
