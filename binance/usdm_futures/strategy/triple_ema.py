@@ -7,7 +7,7 @@ interno à estratégia.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Dict
 from enum import Enum
 
 from ..config.strategy_config import StrategySettings
@@ -40,7 +40,7 @@ class TripleEmaStrategy(IStrategyPort):
     def __init__(
         self,
         settings: StrategySettings,
-        timeframes: dict[TimeframeSlot, str],
+        timeframes: Dict[TimeframeSlot, str],
         log: Logger,
     ) -> None:
         self._settings = settings
@@ -53,8 +53,8 @@ class TripleEmaStrategy(IStrategyPort):
         self._armed: Literal["buy", "sell"] | None = None
 
     def apply_indicators(
-        self, datasets: dict[TimeframeSlot, OHLCVData]
-    ) -> dict[TimeframeSlot, IndicatorData]:
+        self, datasets: Dict[TimeframeSlot, OHLCVData]
+    ) -> Dict[TimeframeSlot, IndicatorData]:
         result: dict[TimeframeSlot, IndicatorData] = {}
         for slot, data in datasets.items():
             series = [row[self._field_index] for row in data]
@@ -76,7 +76,7 @@ class TripleEmaStrategy(IStrategyPort):
         return Role.SIGNAL.value
 
     def _is_aligned(
-        self, indicators: dict[TimeframeSlot, IndicatorData], role: Role
+        self, indicators: Dict[TimeframeSlot, IndicatorData], role: Role
     ) -> Literal["buy", "sell"] | None:
         slot = role.value
         data = indicators.get(slot)
@@ -133,7 +133,7 @@ class TripleEmaStrategy(IStrategyPort):
         return False
 
     def check_signal(
-        self, indicators: dict[TimeframeSlot, IndicatorData]
+        self, indicators: Dict[TimeframeSlot, IndicatorData]
     ) -> Literal["buy", "sell"] | None:
         primary_trend_side = self._is_aligned(indicators, Role.PRIMARY_TREND)
         if primary_trend_side is None:
