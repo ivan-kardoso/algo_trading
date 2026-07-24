@@ -30,10 +30,10 @@ _FIELD_INDEX: dict[str, int] = {
 
 
 class Role(Enum):
-    TREND = TimeframeSlot.TIMEFRAME_1
-    AUX_1 = TimeframeSlot.TIMEFRAME_2
+    TREND_1 = TimeframeSlot.TIMEFRAME_1
+    TREND_2 = TimeframeSlot.TIMEFRAME_2
     SIGNAL = TimeframeSlot.TIMEFRAME_3
-    RITMO = TimeframeSlot.TIMEFRAME_3
+    AUX_1 = TimeframeSlot.TIMEFRAME_4
 
 
 class TripleEmaStrategy(IStrategyPort):
@@ -103,10 +103,10 @@ class TripleEmaStrategy(IStrategyPort):
     def check_signal(
         self, indicators: dict[TimeframeSlot, IndicatorData]
     ) -> Literal["buy", "sell"] | None:
-        self._is_aligned(indicators, Role.TREND)
+        self._is_aligned(indicators, Role.TREND_1)
+        self._is_aligned(indicators, Role.TREND_2)
         self._is_aligned(indicators, Role.SIGNAL)
-        self._is_aligned(indicators, Role.AUX_1)
         return None
 
     def rhythm_slot(self) -> TimeframeSlot:
-        return Role.RITMO.value
+        return Role.SIGNAL.value
