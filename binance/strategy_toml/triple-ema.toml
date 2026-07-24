@@ -14,9 +14,3 @@ timeframe_4 = ""
 since = ""
 candle_limit = 150
 
-[roles]
-signal = "timeframe_3"
-trend = "timeframe_1"
-aux_1 = "timeframe_2"
-ritmo = "timeframe_3"
-

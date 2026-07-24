@@ -1,7 +1,8 @@
 """Estratégia Triple EMA — implementação de IStrategyPort.
 
-Multi-timeframe: recebe de 1 a 4 datasets mapeados por papel
-(signal/trend/aux_1/aux_2, apenas os preenchidos no TOML).
+Multi-timeframe: recebe de 1 a 4 datasets mapeados por posição de timeframe
+(`TimeframeSlot`). O mapeamento papel -> posição é definido pelo enum `Role`,
+interno à estratégia.
 """
 
 from __future__ import annotations
@@ -12,6 +13,7 @@ from enum import Enum
 from ..config.strategy_config import StrategySettings
 from ..indicators import ema
 from ..domain.models.indicator_data import IndicatorData
+from ..domain.models.timeframe_slot import TimeframeSlot
 from ..domain.ports import OHLCVData
 from ..domain.ports.strategy import IStrategyPort
 
@@ -27,11 +29,18 @@ _FIELD_INDEX: dict[str, int] = {
 }
 
 
+class Role(Enum):
+    TREND = TimeframeSlot.TIMEFRAME_1
+    AUX_1 = TimeframeSlot.TIMEFRAME_2
+    SIGNAL = TimeframeSlot.TIMEFRAME_3
+    RITMO = TimeframeSlot.TIMEFRAME_3
+
+
 class TripleEmaStrategy(IStrategyPort):
     def __init__(
         self,
         settings: StrategySettings,
-        timeframes: dict[str, str],
+        timeframes: dict[TimeframeSlot, str],
         log: Logger,
     ) -> None:
         self._settings = settings
@@ -43,11 +52,13 @@ class TripleEmaStrategy(IStrategyPort):
         self._trend_released: bool = False
         self._armed: Literal["buy", "sell"] | None = None
 
-    def apply_indicators(self, datasets: dict[str, OHLCVData]) -> dict[str, IndicatorData]:
-        result: dict[str, IndicatorData] = {}
-        for role, data in datasets.items():
+    def apply_indicators(
+        self, datasets: dict[TimeframeSlot, OHLCVData]
+    ) -> dict[TimeframeSlot, IndicatorData]:
+        result: dict[TimeframeSlot, IndicatorData] = {}
+        for slot, data in datasets.items():
             series = [row[self._field_index] for row in data]
-            result[role] = IndicatorData(
+            result[slot] = IndicatorData(
                 candles=data,
                 ema_fast=ema(series, self._settings.emas.fast_period),
                 ema_medium=ema(series, self._settings.emas.medium_period),
@@ -59,9 +70,10 @@ class TripleEmaStrategy(IStrategyPort):
         return "buy" if f > m > s else "sell" if f < m < s else None
 
     def _is_aligned(
-        self, indicators: dict[Role, IndicatorData], role: Role
+        self, indicators: dict[TimeframeSlot, IndicatorData], role: Role
     ) -> Literal["buy", "sell"] | None:
-        data = indicators.get(role)
+        slot = role.value
+        data = indicators.get(slot)
         if data is None:
             return None
 
@@ -76,7 +88,7 @@ class TripleEmaStrategy(IStrategyPort):
         if f is None or m is None or s is None:
             return None
 
-        timeframe = self._timeframes.get(role, role)
+        timeframe = self._timeframes.get(slot, slot)
         alignment = self._check_alignment(f, m, s)
 
         if alignment == "buy":
@@ -88,8 +100,13 @@ class TripleEmaStrategy(IStrategyPort):
 
         return alignment
 
-    def check_signal(self, indicators: dict[Role, IndicatorData]) -> Literal["buy", "sell"] | None:
+    def check_signal(
+        self, indicators: dict[TimeframeSlot, IndicatorData]
+    ) -> Literal["buy", "sell"] | None:
         self._is_aligned(indicators, Role.TREND)
         self._is_aligned(indicators, Role.SIGNAL)
         self._is_aligned(indicators, Role.AUX_1)
         return None
+
+    def rhythm_slot(self) -> TimeframeSlot:
+        return Role.RITMO.value
