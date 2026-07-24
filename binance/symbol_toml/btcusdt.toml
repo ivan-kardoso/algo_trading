@@ -1,6 +1,6 @@
 symbol = "BTC/USDT:USDT"
 strategy = "triple-ema"
-sandbox = true
+sandbox = false
 
 [orders]
 margin_usdt = 12

@@ -30,10 +30,10 @@ _FIELD_INDEX: dict[str, int] = {
 
 
 class Role(Enum):
-    TREND_1 = TimeframeSlot.TIMEFRAME_1
-    TREND_2 = TimeframeSlot.TIMEFRAME_2
+    PRIMARY_TREND = TimeframeSlot.TIMEFRAME_1
+    SECONDARY_TREND = TimeframeSlot.TIMEFRAME_2
     SIGNAL = TimeframeSlot.TIMEFRAME_3
-    AUX_1 = TimeframeSlot.TIMEFRAME_4
+    AUXILIARY = TimeframeSlot.TIMEFRAME_4
 
 
 class TripleEmaStrategy(IStrategyPort):
@@ -47,9 +47,9 @@ class TripleEmaStrategy(IStrategyPort):
         self._timeframes = timeframes
         self._log = log
         self._field_index = _FIELD_INDEX[settings.emas.field]
-        self._trend_lock_pending: bool = True
-        self._trend_blocked: Literal["buy", "sell"] | None = None
-        self._trend_released: bool = False
+        self._primary_trend_lock_pending: bool = True
+        self._primary_trend_blocked: Literal["buy", "sell"] | None = None
+        self._primary_trend_released: bool = False
         self._armed: Literal["buy", "sell"] | None = None
 
     def apply_indicators(
@@ -66,8 +66,14 @@ class TripleEmaStrategy(IStrategyPort):
             )
         return result
 
-    def _check_alignment(self, f: float, m: float, s: float) -> Literal["buy", "sell"] | None:
+    def _check_alignment(
+        self, f: float, m: float, s: float
+    ) -> Literal["buy", "sell"] | None:
         return "buy" if f > m > s else "sell" if f < m < s else None
+
+    # chamado por SymbolRunner
+    def rhythm_slot(self) -> TimeframeSlot:
+        return Role.SIGNAL.value
 
     def _is_aligned(
         self, indicators: dict[TimeframeSlot, IndicatorData], role: Role
@@ -92,21 +98,55 @@ class TripleEmaStrategy(IStrategyPort):
         alignment = self._check_alignment(f, m, s)
 
         if alignment == "buy":
-            self._log.log("ALIGN", f"Timeframe {timeframe} - Triple EMA alinhada para compra.")
+            self._log.log(
+                "ALIGN", f"Timeframe {timeframe} - Triple EMA alinhada para compra."
+            )
         elif alignment == "sell":
-            self._log.log("ALIGN", f"Timeframe {timeframe} - Triple EMA alinhada para venda.")
+            self._log.log(
+                "ALIGN", f"Timeframe {timeframe} - Triple EMA alinhada para venda."
+            )
         else:
             self._log.log("ALIGN", f"Timeframe {timeframe} - Triple EMA sem alinhamento.")
 
         return alignment
 
+    def _is_primary_trend_released(
+        self, trend_side: Literal["buy", "sell"] | None
+    ) -> bool:
+        if self._primary_trend_released:
+            return True
+
+        if self._primary_trend_lock_pending:
+            self._primary_trend_blocked = trend_side
+            self._primary_trend_lock_pending = False
+            if trend_side is not None:
+                self._log.log(
+                    "LOCK",
+                    f"Alinhamento inicial {'compra.' if self._primary_trend_blocked == 'buy' else 'venda.' if self._primary_trend_blocked == 'sell' else 'indefinido.'} Aguardando reversão.",
+                )
+
+        if trend_side != self._primary_trend_blocked:
+            self._primary_trend_released = True
+            self._log.log("UNLOCK", "Trava liberada - operação habilitada.")
+            return True
+
+        return False
+
     def check_signal(
         self, indicators: dict[TimeframeSlot, IndicatorData]
     ) -> Literal["buy", "sell"] | None:
-        self._is_aligned(indicators, Role.TREND_1)
-        self._is_aligned(indicators, Role.TREND_2)
-        self._is_aligned(indicators, Role.SIGNAL)
-        return None
+        primary_trend_side = self._is_aligned(indicators, Role.PRIMARY_TREND)
+        if primary_trend_side is None:
+            return None
 
-    def rhythm_slot(self) -> TimeframeSlot:
-        return Role.SIGNAL.value
+        if not self._is_primary_trend_released(primary_trend_side):
+            return None
+
+        secondary_trend_side = self._is_aligned(indicators, Role.SECONDARY_TREND)
+        signal_side = self._is_aligned(indicators, Role.SIGNAL)
+
+        if secondary_trend_side and signal_side != primary_trend_side:
+            self._armed = None
+            return None
+
+        return None
